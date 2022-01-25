@@ -122,6 +122,23 @@ const summary = (data: any) => {
     const totalBitcoinAccumulated = aggregates.totalBitcoinPurchased + totalBitcoinEarned
     const averagePurchasePrice = aggregates.totalSpent / aggregates.totalBitcoinPurchased
     const costBasis = (aggregates.costBasisFreeSats + aggregates.totalSpent) / totalBitcoinAccumulated
+
+    const peersList = () => {
+
+        const results = []
+
+        for (const key in peers) {
+            results.push({
+                username: key,
+                sent: peers[key].sent,
+                received: peers[key].received,
+                net: peers[key].net
+
+            })
+        }
+
+        return results
+    }
   
     return {
         wallets: {
@@ -135,9 +152,8 @@ const summary = (data: any) => {
           costBasis: costBasis
 
         },
-        peers: {
-          ...peers
-        }
+        peers: peersList(),
+        transactions: data
       }
   
   }
