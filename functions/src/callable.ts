@@ -34,6 +34,7 @@ const summary = (data: any) => {
         totalCardSpend: 0,
         totalShakingSats: 0,
         totalCashBackBTC: 0,
+        costBasisFreeSats: 0,
     }
 
     const peers: any = {}
@@ -47,7 +48,7 @@ const summary = (data: any) => {
         const transactionType = transaction['Transaction Type']
         const direction = transaction['Direction']
         // const rate = Number(transaction['Buy / Sell Rate'])
-        // const spotRate = Number(transaction['Source / Direction'])
+        const spotRate = Number(transaction['Spot Rate'])
         const sourceDestination = transaction['Source / Destination']
   
         switch(transactionType){
@@ -103,10 +104,12 @@ const summary = (data: any) => {
             case ('shakingsats'):
               wallets.shakepayBitcoin += creditAmount
               aggregates.totalShakingSats += creditAmount
+              aggregates.costBasisFreeSats += creditAmount * spotRate
                 return
             case ('card cashbacks'):
               wallets.shakepayBitcoin += creditAmount
               aggregates.totalCashBackBTC += creditAmount
+              aggregates.costBasisFreeSats += creditAmount * spotRate
                 return
             default:
                 return
@@ -114,6 +117,11 @@ const summary = (data: any) => {
     
       })
   
+    //More Summary
+    const totalBitcoinEarned = aggregates.totalShakingSats + aggregates.totalCashBackBTC
+    const totalBitcoinAccumulated = aggregates.totalBitcoinPurchased + totalBitcoinEarned
+    const averagePurchasePrice = aggregates.totalSpent / aggregates.totalBitcoinPurchased
+    const costBasis = (aggregates.costBasisFreeSats + aggregates.totalSpent) / totalBitcoinAccumulated
   
     return {
         wallets: {
@@ -121,8 +129,11 @@ const summary = (data: any) => {
         },
         aggregates: {
           ...aggregates,
-          totalBitcoinEarned: aggregates.totalShakingSats + aggregates.totalCashBackBTC,
-          averagePurchasePrice: aggregates.totalSpent / aggregates.totalBitcoinPurchased
+          totalBitcoinEarned: totalBitcoinEarned,
+          totalBitcoinAccumulated: totalBitcoinAccumulated,
+          averagePurchasePrice: averagePurchasePrice,
+          costBasis: costBasis
+
         },
         peers: {
           ...peers
