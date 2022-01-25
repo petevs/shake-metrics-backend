@@ -3,23 +3,6 @@ import * as Papa from 'papaparse'
 import * as functions from 'firebase-functions'
 
 
-// const summarize = ( transactions ) => {
-
-//     const summary = {
-//         wallets: [
-//             {
-//                 shakepay: 0,
-
-//             }
-//         ]
-//     }
-
-// }
-
-
-//Check transaction type
-
-
 const summary = (data: any) => {
 
     const wallets = {
@@ -35,15 +18,18 @@ const summary = (data: any) => {
         totalShakingSats: 0,
         totalCashBackBTC: 0,
         costBasisFreeSats: 0,
+        totalBitcoinSold: 0,
+        totalBitcoinSentToPeers: 0,
+        proceeds: 0,
     }
 
     const peers: any = {}
   
     data.forEach((transaction: { [x: string]: any }) => {
 
-        // const debitCurrency = transaction['Debit Currency']
+        const debitCurrency = transaction['Debit Currency']
         const debitAmount = Number(transaction['Amount Debited'])
-        // const creditCurrency = transaction['Credit Currency']
+        const creditCurrency = transaction['Credit Currency']
         const creditAmount = Number(transaction['Amount Credited'])
         const transactionType = transaction['Transaction Type']
         const direction = transaction['Direction']
@@ -52,67 +38,103 @@ const summary = (data: any) => {
         const sourceDestination = transaction['Source / Destination']
   
         switch(transactionType){
+
             case ('fiat funding'):
                 wallets.shakepayDollars += creditAmount
                 return
+
             case ('fiat cashout'):
-                  wallets.shakepayDollars -= debitAmount
+                wallets.shakepayDollars -= debitAmount
                 return
+
             case ('other'):
-                  wallets.shakepayDollars += (-1 * debitAmount) + creditAmount
+                wallets.shakepayDollars += (-1 * debitAmount) + creditAmount
                 return
+
             case ('card transactions'):
-                  wallets.shakepayDollars -= debitAmount
-                  aggregates.totalCardSpend += debitAmount
+                wallets.shakepayDollars -= debitAmount
+                aggregates.totalCardSpend += debitAmount
                 return
+
             case ('purchase/sale'):
-              if(direction === 'purchase') {
-                  wallets.shakepayDollars -= debitAmount
-                  aggregates.totalSpent += debitAmount
-                  wallets.shakepayBitcoin += creditAmount
-                  aggregates.totalBitcoinPurchased += creditAmount
-                  
-              }
-              else {
-                  wallets.shakepayDollars += creditAmount
-                  wallets.shakepayBitcoin -= debitAmount
-              }
-              return
+                if(direction === 'purchase') {
+                    wallets.shakepayDollars -= debitAmount
+                    aggregates.totalSpent += debitAmount
+                    wallets.shakepayBitcoin += creditAmount
+                    aggregates.totalBitcoinPurchased += creditAmount
+                    
+                }
+                else {
+                    wallets.shakepayDollars += creditAmount
+                    wallets.shakepayBitcoin -= debitAmount
+                    aggregates.totalBitcoinSold += debitAmount
+                    aggregates.proceeds += creditAmount
+                }
+                return
+
             case ('crypto funding'):
                 wallets.shakepayBitcoin += creditAmount
                 wallets.coldStorage -= creditAmount
                 return
+
             case ('crypto cashout'):
                 wallets.shakepayBitcoin -= debitAmount
                 wallets.coldStorage += debitAmount
                 return
+
             case ('peer transfer'):
-              wallets.shakepayDollars += -debitAmount + creditAmount
-              // create peer if does not exist
+
+              // Create a new peer if does not exist
               if(!(sourceDestination in peers)) {
                 peers[sourceDestination] = {
-                  sent: 0,
-                  received: 0,
-                  net: 0
+                    fiat: {
+                        sent: 0,
+                        received: 0,
+                        net: 0
+                    },
+                    BTC: {
+                        sent: 0,
+                        received: 0,
+                        net: 0
+                    }
                 }
               }
+
+              //If sent in BTC then adjust the peer's BTC account
+              if(debitCurrency === 'BTC' || creditCurrency === 'BTC') {
+                wallets.shakepayBitcoin += -debitAmount + creditAmount
+                peers[sourceDestination].BTC.sent += debitAmount || 0
+                peers[sourceDestination].BTC.received += creditAmount || 0
+                peers[sourceDestination].BTC.net += creditAmount - debitAmount
+              }
+
+              //If sent in CAD then adjust the peer's fiat account
+              if(debitCurrency === 'CAD' || creditCurrency === 'CAD') {
+                wallets.shakepayDollars += -debitAmount + creditAmount
+                peers[sourceDestination].fiat.sent += debitAmount || 0
+                peers[sourceDestination].fiat.received += creditAmount || 0
+                peers[sourceDestination].fiat.net += creditAmount - debitAmount
+              }
               
-              peers[sourceDestination].sent += debitAmount || 0
-              peers[sourceDestination].received += creditAmount || 0
-              peers[sourceDestination].net += creditAmount - debitAmount
-                return
+              return
+
             case ('shakingsats'):
               wallets.shakepayBitcoin += creditAmount
               aggregates.totalShakingSats += creditAmount
               aggregates.costBasisFreeSats += creditAmount * spotRate
-                return
+              
+              return
+
             case ('card cashbacks'):
               wallets.shakepayBitcoin += creditAmount
               aggregates.totalCashBackBTC += creditAmount
               aggregates.costBasisFreeSats += creditAmount * spotRate
-                return
+              
+              return
+
             default:
                 return
+
         }
     
       })
@@ -130,10 +152,17 @@ const summary = (data: any) => {
         for (const key in peers) {
             results.push({
                 username: key,
-                sent: peers[key].sent,
-                received: peers[key].received,
-                net: peers[key].net
-
+                fiat: {
+                    sent: peers[key].fiat.sent,
+                    received: peers[key].fiat.received,
+                    net: peers[key].fiat.net
+                },
+                BTC: {
+                    sent: peers[key].BTC.sent,
+                    received: peers[key].BTC.received,
+                    net: peers[key].BTC.net
+                }
+                
             })
         }
 
