@@ -1,37 +1,26 @@
-// import * as admin from 'firebase-admin'
+import * as admin from 'firebase-admin'
 import * as moment from 'moment'
 
 
-// const db = admin.firestore()
+const db = admin.firestore()
 
-// const docRef = db.collection('historicalData').doc('cad')
 
-// const getHistoricalData = async () => {
-
-//     let historicalData: FirebaseFirestore.DocumentData = {}
-
-//     docRef.get().then(( doc ) => {
-//         if(doc.exists) {
-//             historicalData = {
-//                 ...historicalData,
-//                 ...doc.data()
-//             }
-//         }
-//         else {
-//             console.log('No such document')
-//         }
-//     }).catch((error) => {
-//         console.log('Error getting document:', error)
-//     })
-
-//     return historicalData
-// }
+const getHistoricalData = async () => {
+    
+    const docRef = db.collection('historicalData').doc('cad')
+    const doc = await docRef.get()
+    const result = doc.data()
+    
+    if(!result){return []}
+    
+    return result
+}
 
 export const calculateTransactions = async ( formattedTransactions: any ) => {
 
     const transactions = formattedTransactions.transactions
 
-    // const historicalData = await getHistoricalData()
+    const historicalData = await getHistoricalData()
 
     const newTransactions =  transactions.map( (trans: any) => {
 
@@ -44,6 +33,7 @@ export const calculateTransactions = async ( formattedTransactions: any ) => {
             transaction: {
                 ...trans.transaction,
                 friendlyDate: friendlyDate,
+                historicalPrice: historicalData[friendlyDate]
             }
         }
 
