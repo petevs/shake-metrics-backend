@@ -2,6 +2,7 @@ import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 import axios from 'axios'
 import * as moment from 'moment'
+import { getShakepayPrice } from './utils/getShakepayPrice'
 
 
 const db = admin.firestore()
@@ -46,4 +47,17 @@ export const updateHistoricalDataCAD = functions
     
             return db.collection('historicalData').doc('cad').set(historical)
 
+    })
+
+
+    export const updateShakepayPrice = functions
+    .runWith({ memory: '1GB', timeoutSeconds: 300})
+    .pubsub.schedule('*/3 * * * *').onRun( async (context) => {
+
+        const price = await getShakepayPrice()
+
+        return db.collection('shakepayPrice').doc('currentPrice').set({
+            timeStamp: Date.now(),
+            price: price
+        })
     })
