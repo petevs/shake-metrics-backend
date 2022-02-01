@@ -1,9 +1,7 @@
 import axios from 'axios'
 import * as Papa from 'papaparse'
 import * as functions from 'firebase-functions'
-// import { formatTransactions } from './utils/formatTransaction'
-// import { calculateTransactions } from './utils/calculateTransactions'
-import { processTransactions } from './utils/processTransacations'
+import { processTransactions } from './utils/processTransactions'
 
 
 export const parseShakepay = functions.https.onCall(async (req, context) => {
@@ -16,8 +14,5 @@ export const parseShakepay = functions.https.onCall(async (req, context) => {
 
     const transactions = res.data
     return processTransactions(transactions)
-    // const formattedTrans = formatTransactions(transactions)
-
-    // return calculateTransactions(formattedTrans)
 
 })
