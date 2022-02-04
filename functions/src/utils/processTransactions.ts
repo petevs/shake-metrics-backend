@@ -46,10 +46,15 @@ const createDateSnapshots = async ( transactions: string | any[] ) => {
 
     const historicalData : any = await getHistoricalData()
 
+    let count : any = 0
+
     dateList.forEach( ( date ) => {
         
+        count += 1
+
         dateSnapshots[date] = {
             historicalPrice: historicalData[date],
+            index: count,
             transactions: [],
         }
     })
