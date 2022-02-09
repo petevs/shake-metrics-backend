@@ -88,6 +88,7 @@ const adjustSnapshots = async ( transactions: any[] ) => {
     const wallets : any = {
         CAD: 0,
         BTC: 0,
+        ETH: 0,
         coldStorage: 0
     }
 
@@ -121,6 +122,24 @@ const adjustSnapshots = async ( transactions: any[] ) => {
         totalBitcoinAccumulated: 0,
         costBasisForTotal: 0,
         costBasis: 0
+    }
+
+    const pTransfers : any = {
+        CAD: {
+            totalSent: 0,
+            totalReceived: 0,
+            net: 0,
+        },
+        BTC: {
+            totalSent: 0,
+            totalReceived: 0,
+            net: 0,
+        },
+        ETH: {
+            totalSent: 0,
+            totalReceived: 0,
+            net: 0,
+        },
     }
 
     const adjustWalletBalances = ( transaction: { [x: string]: any } ) => {
@@ -162,12 +181,17 @@ const adjustSnapshots = async ( transactions: any[] ) => {
         //If peer does not exist, add peer
         if(!(sourceDestination in peers)) {
                 peers[sourceDestination] = {
-                fiat: {
+                CAD: {
                     sent: 0,
                     received: 0,
                     net: 0
                 },
                 BTC: {
+                    sent: 0,
+                    received: 0,
+                    net: 0
+                },
+                ETH: {
                     sent: 0,
                     received: 0,
                     net: 0
@@ -178,13 +202,31 @@ const adjustSnapshots = async ( transactions: any[] ) => {
             peers[sourceDestination].BTC.sent += debitAmount || 0
             peers[sourceDestination].BTC.received += creditAmount || 0
             peers[sourceDestination].BTC.net += creditAmount - debitAmount
+
+            pTransfers.BTC.totalSent += debitAmount || 0
+            pTransfers.BTC.totalReceived += creditAmount || 0
+            pTransfers.BTC.net += creditAmount - debitAmount
             }
         }
 
         if(debitCurrency === 'CAD' || creditCurrency === 'CAD') {
-                peers[sourceDestination].fiat.sent += debitAmount || 0
-                peers[sourceDestination].fiat.received += creditAmount || 0
-                peers[sourceDestination].fiat.net += creditAmount - debitAmount
+                peers[sourceDestination].CAD.sent += debitAmount || 0
+                peers[sourceDestination].CAD.received += creditAmount || 0
+                peers[sourceDestination].CAD.net += creditAmount - debitAmount
+
+                pTransfers.CAD.totalSent += debitAmount || 0
+                pTransfers.CAD.totalReceived += creditAmount || 0
+                pTransfers.CAD.net += creditAmount - debitAmount
+        }
+
+        if(debitCurrency === 'ETH' || creditCurrency === 'ETH') {
+                peers[sourceDestination].ETH.sent += debitAmount || 0
+                peers[sourceDestination].ETH.received += creditAmount || 0
+                peers[sourceDestination].ETH.net += creditAmount - debitAmount
+
+                pTransfers.ETH.totalSent += debitAmount || 0
+                pTransfers.ETH.totalReceived += creditAmount || 0
+                pTransfers.ETH.net += creditAmount - debitAmount
         }
     }
 
@@ -266,6 +308,7 @@ const adjustSnapshots = async ( transactions: any[] ) => {
             wallets: {...wallets},
             bitcoinTransfers: {...bitcoinTransfers},
             portfolio: {...portfolio},
+            peerTransfers: {...pTransfers},
             card: {...card},
             shakingSats: {...shakingSats},
             peers: {...peers}
