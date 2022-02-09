@@ -308,7 +308,11 @@ const adjustSnapshots = async ( transactions: any[] ) => {
             wallets: {...wallets},
             bitcoinTransfers: {...bitcoinTransfers},
             portfolio: {...portfolio},
-            peerTransfers: {...pTransfers},
+            peerTransfers: {
+                CAD: {...pTransfers.CAD},
+                BTC: {...pTransfers.BTC},
+                ETH: {...pTransfers.ETH}
+            },
             card: {...card},
             shakingSats: {...shakingSats},
             peers: {...peers}
