@@ -4,18 +4,30 @@ import * as moment from 'moment'
 
 const db = admin.firestore()
 
-
+//Get historical prices
 const getHistoricalData = async () => {
     
+    //Get historical bitcoin prices from firebase firestore
     const docRef = db.collection('historicalData').doc('cad')
     const doc = await docRef.get()
     const result = doc.data()
+
+    //Get historical ethereum prices from firebase firestore
+    const ethRef = db.collection('historicalData').doc('eth')
+    const ethDoc = await ethRef.get()
+    const ethResult = ethDoc.data()
     
-    if(!result){return []}
+    if(!result || !ethResult){return []}
     
-    return result
+    //Return historical prices
+    return {
+        BTC: {...result},
+        ETH: {...ethResult}
+    }
 }
 
+
+//Get all the dates in between the start and end date and return an array of dates
 const getDatesBetween = ( start: moment.MomentInput, end: moment.MomentInput ) => {
 
     let dateList = []
@@ -33,27 +45,40 @@ const getDatesBetween = ( start: moment.MomentInput, end: moment.MomentInput ) =
 }
 
 
+//Create a snapshot for each date 
 const createDateSnapshots = async ( transactions: string | any[] ) => {
 
     if(transactions.length === 0){ return []}
 
+    //Get start and end date based on transactions
     const startDate = moment(transactions[0]['Date']).format('YYYY-MM-DD')
     const endDate = moment().format('YYYY-MM-DD')
 
+    //Create an array of all the dates
     const dateList = getDatesBetween(startDate, endDate)
     
+    //Empty datesnapshot 
     const dateSnapshots : any = {}
 
+    //Get all the historical prices for bitcoin and ethereum
     const historicalData : any = await getHistoricalData()
 
+    //Count to keep track of the index
     let count : any = 0
 
+    //Loop through every date in datelist
     dateList.forEach( ( date ) => {
         
+        //Add to count to keep track of index
         count += 1
 
+        //Lookup prices on date and add
         dateSnapshots[date] = {
-            historicalPrice: historicalData[date],
+            historicalPrice: {
+                BTC: historicalData['BTC'][date],
+                ETH: historicalData['ETH'][date]
+            },
+            //add index, so can easily slice array later    
             index: count,
             transactions: [],
         }
@@ -63,13 +88,18 @@ const createDateSnapshots = async ( transactions: string | any[] ) => {
 
 }
 
+//Add transactions to each date snapshot
 const addTransactionsToDateSnapshots = async ( transactions: any[] ) => {
 
+    //Create datesnapshots
     const dateSnapshots : any = await createDateSnapshots(transactions)
 
+    //for each transaction add it to the daily snapshots object
     transactions.forEach( ( transaction: { [x: string]: moment.MomentInput } ) => {
+        //Make friendly date 
         const friendlyDate = moment(transaction['Date']).format('YYYY-MM-DD')
 
+        //Look up snapshot date and add transactions
         dateSnapshots[friendlyDate] = {
             ...dateSnapshots[friendlyDate],
             transactions: [
@@ -83,8 +113,10 @@ const addTransactionsToDateSnapshots = async ( transactions: any[] ) => {
 
 }
 
+//Adjust the snapshots based on type of transaction
 const adjustSnapshots = async ( transactions: any[] ) => {
 
+    //Starting balances to keep track of aggregates
     const wallets : any = {
         CAD: 0,
         BTC: 0,
@@ -92,9 +124,15 @@ const adjustSnapshots = async ( transactions: any[] ) => {
         coldStorage: 0
     }
 
-    const bitcoinTransfers : any = {
-        out: 0,
-        in: 0
+    const cryptoTransfers : any = {
+        BTC: {
+            in: 0,
+            out: 0,
+        },
+        ETH: {
+            in: 0,
+            out: 0,
+        }
     }
 
     const peers : any = {}
@@ -108,6 +146,13 @@ const adjustSnapshots = async ( transactions: any[] ) => {
     const shakingSats : any = {
         totalShakingSats: 0,
         costBasis: 0,
+        streaks: [],
+        lastDay: '',
+        longestStreak: {
+            days: 0,
+            startDate: '',
+            endDate: ''
+        }
     }
 
     const portfolio : any = {
@@ -149,7 +194,7 @@ const adjustSnapshots = async ( transactions: any[] ) => {
         }
 
         if(transaction['Transaction Type'] === 'crypto funding') {
-            bitcoinTransfers.in += Number(transaction['Amount Credited'])
+            cryptoTransfers[transaction['Credit Currency']].in += Number(transaction['Amount Credited'])
         }
 
         if(transaction['Credit Currency']){
@@ -157,7 +202,7 @@ const adjustSnapshots = async ( transactions: any[] ) => {
         }
 
         if(transaction['Transaction Type'] === 'crypto cashout') {
-            bitcoinTransfers.out += Number(transaction['Amount Debited'])
+            cryptoTransfers[transaction['Debit Currency']].out += Number(transaction['Amount Debited'])
         }
 
     }
@@ -251,9 +296,40 @@ const adjustSnapshots = async ( transactions: any[] ) => {
 
             const amount = Number(transaction['Amount Credited'])
             const spotRate = Number(transaction['Spot Rate'])
+            
+            //Date of current shake
+            const shakeDate = moment(transaction['Date'])
+
+            //Date of last shake
+            const lastShakeDate = moment(shakingSats.lastDay)
+
+            //If the difference between them is more than one day, streak breaks
+            if(!lastShakeDate || shakeDate.diff(lastShakeDate, 'days') > 1) {
+                shakingSats.streaks.push([])
+            }
+
+            //Change last day shaking to date
+            shakingSats.lastDay = shakeDate.format('YYYY-MM-DD')
+
+            //get last streak and add date to it
+            const lastStreakIndex = shakingSats.streaks.length - 1
+
+            if(lastStreakIndex >= 0){
+                shakingSats.streaks[lastStreakIndex].push(shakeDate.format('YYYY-MM-DD'))
+            }
+
+            //Check all the streaks to find out the longest
+            shakingSats.streaks.forEach((streak: string | any[]) => {
+                if(streak.length > shakingSats.longestStreak.days){
+                    shakingSats.longestStreak.days = streak.length
+                    shakingSats.longestStreak.startDate = streak[0]
+                    shakingSats.longestStreak.endDate = streak[streak.length - 1]
+                }
+            })
 
             shakingSats.totalShakingSats += amount
             shakingSats.costBasis += (amount * spotRate)
+
             portfolio.totalFreeBitcoinEarned += amount
             portfolio.costBasisForTotal += (amount * spotRate)
 
@@ -293,7 +369,7 @@ const adjustSnapshots = async ( transactions: any[] ) => {
 
     for ( const day in dailySnapshots) {
 
-        const historicalPrice = dailySnapshots[day].historicalPrice
+        const historicalPrice = dailySnapshots[day].historicalPrice['BTC']
 
         dailySnapshots[day]['transactions'].forEach( (trans: { [x: string]: any }) => {
             adjustWalletBalances(trans)
@@ -306,7 +382,10 @@ const adjustSnapshots = async ( transactions: any[] ) => {
         dailySnapshots[day] = {
             ...dailySnapshots[day],
             wallets: {...wallets},
-            bitcoinTransfers: {...bitcoinTransfers},
+            cryptoTransfers: {
+                BTC: {...cryptoTransfers.BTC},
+                ETH: {...cryptoTransfers.ETH},
+            },
             portfolio: {...portfolio},
             peerTransfers: {
                 CAD: {...pTransfers.CAD},
