@@ -20,13 +20,18 @@ export const getShakepayPrice = async () => {
   
     const textContent = await page.evaluate(() => {
 
-          const shakepayPrice = document.querySelector('.navbar-rates li a')
+          const BTC = document.querySelectorAll('.navbar-rates li a')[0]
+          const ETH = document.querySelectorAll('.navbar-rates li a')[1]
 
-          if (!(shakepayPrice instanceof HTMLElement)) {return}
+          if (!(BTC instanceof HTMLElement)) {return}
+          if (!(ETH instanceof HTMLElement)) {return}
 
-          const price = shakepayPrice.innerText
+          const prices = {
+            BTC: BTC.innerText.replace(/[^\d\.]/g,''),
+            ETH: ETH.innerText.replace(/[^\d\.]/g,'')
+          }
           
-          return price.replace(/[^\d\.]/g,'')
+          return prices
       })
   
     return textContent

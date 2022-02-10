@@ -58,6 +58,8 @@ export const updateHistoricalDataCAD = functions
 
         return db.collection('shakepayPrice').doc('currentPrice').set({
             timeStamp: Date.now(),
-            price: price
+            price: {
+                ...price
+            }
         })
     })
