@@ -148,26 +148,25 @@ const adjustSnapshots = async ( transactions: any[] ) => {
         costBasis: 0,
         streaks: [],
         lastDay: '',
-        longestStreak: {
-            days: 0,
-            startDate: '',
-            endDate: ''
+        longestStreak: 0,
+        longestStreakStartDate: '',
+        longestStreakEndDate: ''
+    }
+
+    const buySell : any = {
+        BTC: {
+            totalPurchased: 0,
+            totalInvested: 0,
+            totalSold: 0,
+            totalProceeds: 0,
+        },
+        ETH: {
+            totalPurchased: 0,
+            totalSold: 0,
+            totalProceeds: 0
         }
     }
 
-    const portfolio : any = {
-        totalInvested: 0,
-        totalBitcoinPurchased: 0,
-        totalBitcoinSold: 0,
-        totalSaleProceeds: 0,
-        totalFreeBitcoinEarned: 0,
-        portfolioValue: 0,
-        unrealizedGain: 0,
-        averageCostPerBTCPurchased: 0,
-        totalBitcoinAccumulated: 0,
-        costBasisForTotal: 0,
-        costBasis: 0
-    }
 
     const pTransfers : any = {
         CAD: {
@@ -284,9 +283,7 @@ const adjustSnapshots = async ( transactions: any[] ) => {
 
         if(transactionType === 'card cashbacks') {
             card.totalCashBackBTC += Number(transaction['Amount Credited'])
-            portfolio.totalFreeBitcoinEarned += Number(transaction['Amount Credited'])
             card.costBasis += Number(transaction['Amount Credited']) * Number(transaction['Spot Rate'])
-            portfolio.costBasisForTotal += Number(transaction['Amount Credited']) * Number(transaction['Spot Rate'])
         }
 
     }
@@ -320,18 +317,15 @@ const adjustSnapshots = async ( transactions: any[] ) => {
 
             //Check all the streaks to find out the longest
             shakingSats.streaks.forEach((streak: string | any[]) => {
-                if(streak.length > shakingSats.longestStreak.days){
-                    shakingSats.longestStreak.days = streak.length
-                    shakingSats.longestStreak.startDate = streak[0]
-                    shakingSats.longestStreak.endDate = streak[streak.length - 1]
+                if(streak.length > shakingSats.longestStreak){
+                    shakingSats.longestStreak = streak.length
+                    shakingSats.longestStreakStartDate = streak[0]
+                    shakingSats.longestStreakEndDate = streak[streak.length - 1]
                 }
             })
 
             shakingSats.totalShakingSats += amount
             shakingSats.costBasis += (amount * spotRate)
-
-            portfolio.totalFreeBitcoinEarned += amount
-            portfolio.costBasisForTotal += (amount * spotRate)
 
         }
     }
@@ -340,28 +334,14 @@ const adjustSnapshots = async ( transactions: any[] ) => {
         if(transaction['Transaction Type'] !== 'purchase/sale'){ return }
 
         if(transaction['Direction'] === 'purchase'){
-            portfolio.totalInvested += Number(transaction['Amount Debited'])
-            portfolio.totalBitcoinPurchased += Number(transaction['Amount Credited'])
+            buySell[transaction['Credit Currency']].totalInvested += Number(transaction['Amount Debited'])
+            buySell[transaction['Credit Currency']].totalPurchased += Number(transaction['Amount Credited'])
         }
 
         if(transaction['Direction'] === 'sale'){
-                portfolio.totalBitcoinSold += Number(transaction['Amount Debited'])
-                portfolio.totalSaleProceeds += Number(transaction['Amount Credited'])
+            buySell[transaction['Debit Currency']].totalSold += Number(transaction['Amount Debited'])
+            buySell[transaction['Debit Currency']].totalSaleProceeds += Number(transaction['Amount Credited'])
         }
-
-        //Calculations
-        const portfolioValue = (portfolio.totalBitcoinPurchased * price)
-        const unrealizedGain = (portfolioValue - portfolio.totalInvested)
-        const averageCostPerBTCPurchased = portfolio.totalInvested / portfolio.totalBitcoinPurchased
-
-        portfolio.portfolioValue = portfolioValue
-        portfolio.unrealizedGain = unrealizedGain
-        portfolio.averageCostPerBTCPurchased = averageCostPerBTCPurchased
-
-
-        portfolio.costBasisForTotal += portfolio.totalInvested
-        portfolio.totalBitcoinAccumulated = portfolio.totalBitcoinPurchased + portfolio.totalFreeBitcoinEarned
-        portfolio.costBasis = portfolio.costBasisForTotal / portfolio.totalBitcoinAccumulated 
 
     } 
 
@@ -386,7 +366,10 @@ const adjustSnapshots = async ( transactions: any[] ) => {
                 BTC: {...cryptoTransfers.BTC},
                 ETH: {...cryptoTransfers.ETH},
             },
-            portfolio: {...portfolio},
+            buySell: {
+                BTC: {...buySell.BTC},
+                ETH: {...buySell.ETH},
+            },
             peerTransfers: {
                 CAD: {...pTransfers.CAD},
                 BTC: {...pTransfers.BTC},
@@ -402,8 +385,131 @@ const adjustSnapshots = async ( transactions: any[] ) => {
 
 }
 
+
+const aggregateSnapshots = async ( transactions: any[] ) => {
+
+    const getPerformance = ( current: 
+        { buySell: { [x: string]: { totalInvested: any, totalSold: any, totalPurchased: any, totalProceeds: any } }; historicalPrice: { [x: string]: number } }, 
+        currency: string 
+        ) => {
+
+        const netBalance = () => {
+            return current.buySell[currency].totalPurchased - current.buySell[currency].totalSold
+        }
+
+        const currentValue = () => {
+            return current.historicalPrice[currency] * netBalance()
+        }
+
+        const avgCost = () => {
+            return current.buySell[currency].totalInvested / current.buySell[currency].totalPurchased || 0
+        }
+
+        const unrealizedCost = () => {
+            return netBalance() * avgCost()
+        }
+
+        const unrealizedGain = () => {
+            return currentValue() - unrealizedCost() || 0
+        }
+
+        const unrealizedROI = () => {
+            return unrealizedGain() / unrealizedCost() || 0
+        }
+
+        const realizedCost = () => {
+            return avgCost() * current.buySell[currency].totalSold
+        }
+
+        const realizedGain = () => {
+            return current.buySell[currency].totalProceeds - realizedCost()
+        }
+
+        const realizedROI = () => {
+            return realizedGain() / realizedCost() || 0
+        }
+
+        const totalReturn = () => {
+            return unrealizedGain() + realizedGain()
+        }
+
+        const totalROI = () => {
+            return totalReturn() / current.buySell[currency].totalInvested || 0
+        }
+
+
+
+        return {
+                value: currentValue(),
+                unrealizedCost: unrealizedCost(),
+                unrealizedGain: unrealizedGain(),
+                unrealizedROI: unrealizedROI(),
+                netBalance: netBalance(),
+                avgCost: avgCost(),
+                totalSold: current.buySell[currency].totalSold,
+                realizedGain: realizedGain(),
+                realizedCost: realizedCost(),
+                realizedROI: realizedROI(),
+                totalReturn: totalReturn(),
+                totalROI: totalROI(),
+                totalPurchased: current.buySell[currency].totalPurchased
+            }
+
+
+    }
+ 
+
+    const snapshotObj = await adjustSnapshots(transactions)
+
+    const performance = {
+        ALL: {},
+        BTC: {},
+        ETH: {}
+    }
+
+    for (const date in snapshotObj ) {
+
+        const current = snapshotObj[date]
+
+        performance.BTC = {...getPerformance(current, 'BTC')}
+        performance.ETH = {...getPerformance(current, 'ETH')} 
+
+        snapshotObj[date] = {
+            ...snapshotObj[date],
+            performance: {...performance}
+        }
+
+    }
+
+    for (const date in snapshotObj){
+        
+        const current = snapshotObj[date]
+
+        const { performance } = current
+
+        snapshotObj[date] = {
+            ...snapshotObj[date],
+            performance: {
+                ...snapshotObj[date].performance,
+                ALL: {
+                    value: performance.BTC.value + performance.ETH.value,
+                    unrealizedGain: performance.BTC.unrealizedGain + performance.ETH.unrealizedGain,
+                    realizedGain: performance.BTC.realizedGain + performance.ETH.realizedGain,
+                    totalReturn: performance.BTC.totalReturn + performance.ETH.totalReturn,
+                }
+            }
+        }
+    }
+
+
+    return snapshotObj    
+
+}
+
+
+
 const createSnapshotList = async ( transactions: any ) => {
-    const snapshotObj : any = await adjustSnapshots(transactions)
+    const snapshotObj : any = await aggregateSnapshots(transactions)
 
     const snapshotList = []
 

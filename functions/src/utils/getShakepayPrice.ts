@@ -1,6 +1,5 @@
 import * as puppeteer from 'puppeteer'
 
-
 const preparePageForTests = async (page: { setUserAgent: (arg0: string) => any; }) => {
 
     // Pass the User-Agent Test.
