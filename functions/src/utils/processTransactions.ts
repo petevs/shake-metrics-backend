@@ -162,6 +162,7 @@ const adjustSnapshots = async ( transactions: any[] ) => {
         },
         ETH: {
             totalPurchased: 0,
+            totalInvested: 0,
             totalSold: 0,
             totalProceeds: 0
         }
@@ -340,7 +341,7 @@ const adjustSnapshots = async ( transactions: any[] ) => {
 
         if(transaction['Direction'] === 'sale'){
             buySell[transaction['Debit Currency']].totalSold += Number(transaction['Amount Debited'])
-            buySell[transaction['Debit Currency']].totalSaleProceeds += Number(transaction['Amount Credited'])
+            buySell[transaction['Debit Currency']].totalProceeds += Number(transaction['Amount Credited'])
         }
 
     } 
@@ -500,7 +501,6 @@ const aggregateSnapshots = async ( transactions: any[] ) => {
             }
         }
     }
-
 
     return snapshotObj    
 
