@@ -124,14 +124,21 @@ const adjustSnapshots = async ( transactions: any[] ) => {
         coldStorage: 0
     }
 
-    const cryptoTransfers : any = {
+    const transfers : any = {
+        CAD: {
+            in: 0,
+            out: 0,
+            net: 0,
+        },
         BTC: {
             in: 0,
             out: 0,
+            net: 0
         },
         ETH: {
             in: 0,
             out: 0,
+            net: 0,
         }
     }
 
@@ -191,18 +198,14 @@ const adjustSnapshots = async ( transactions: any[] ) => {
 
         if(transaction['Debit Currency']){
             wallets[transaction['Debit Currency']] -= Number(transaction['Amount Debited'])
-        }
-
-        if(transaction['Transaction Type'] === 'crypto funding') {
-            cryptoTransfers[transaction['Credit Currency']].in += Number(transaction['Amount Credited'])
+            transfers[transaction['Debit Currency']].out += Number(transaction['Amount Debited'])
+            transfers[transaction['Debit Currency']].net -= Number(transaction['Amount Debited'])
         }
 
         if(transaction['Credit Currency']){
             wallets[transaction['Credit Currency']] += Number(transaction['Amount Credited'])
-        }
-
-        if(transaction['Transaction Type'] === 'crypto cashout') {
-            cryptoTransfers[transaction['Debit Currency']].out += Number(transaction['Amount Debited'])
+            transfers[transaction['Credit Currency']].in += Number(transaction['Amount Credited'])
+            transfers[transaction['Credit Currency']].net += Number(transaction['Amount Credited'])
         }
 
     }
@@ -363,9 +366,9 @@ const adjustSnapshots = async ( transactions: any[] ) => {
         dailySnapshots[day] = {
             ...dailySnapshots[day],
             wallets: {...wallets},
-            cryptoTransfers: {
-                BTC: {...cryptoTransfers.BTC},
-                ETH: {...cryptoTransfers.ETH},
+            transfers: {
+                BTC: {...transfers.BTC},
+                ETH: {...transfers.ETH},
             },
             buySell: {
                 BTC: {...buySell.BTC},
