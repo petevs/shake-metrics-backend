@@ -175,6 +175,24 @@ const adjustSnapshots = async ( transactions: any[] ) => {
         }
     }
 
+    const other : any = {
+        CAD: {
+            in: 0,
+            out: 0,
+            net: 0,
+        },
+        BTC: {
+            in: 0,
+            out: 0,
+            net: 0
+        },
+        ETH: {
+            in: 0,
+            out: 0,
+            net: 0,
+        }
+    }
+
 
     const pTransfers : any = {
         CAD: {
@@ -198,14 +216,30 @@ const adjustSnapshots = async ( transactions: any[] ) => {
 
         if(transaction['Debit Currency']){
             wallets[transaction['Debit Currency']] -= Number(transaction['Amount Debited'])
-            transfers[transaction['Debit Currency']].out += Number(transaction['Amount Debited'])
-            transfers[transaction['Debit Currency']].net -= Number(transaction['Amount Debited'])
+        }
+
+        if(transaction['Transaction Type'] === 'crypto funding' || transaction['Transaction Type'] === 'fiat funding') {
+            transfers[transaction['Credit Currency']].in += Number(transaction['Amount Credited'])
+            transfers[transaction['Credit Currency']].net -= Number(transaction['Amount Credited'])
         }
 
         if(transaction['Credit Currency']){
             wallets[transaction['Credit Currency']] += Number(transaction['Amount Credited'])
-            transfers[transaction['Credit Currency']].in += Number(transaction['Amount Credited'])
-            transfers[transaction['Credit Currency']].net += Number(transaction['Amount Credited'])
+        }
+
+        if(transaction['Transaction Type'] === 'crypto cashout' || transaction['Transaction Type'] === 'fiat cashout') {
+            transfers[transaction['Debit Currency']].out += Number(transaction['Amount Debited'])
+            transfers[transaction['Debit Currency']].net += Number(transaction['Amount Debited'])
+        }
+
+        if(transaction['Transaction Type'] === 'other' && transaction['Credit Currency']) {
+            other[transaction['Credit Currency']].in += Number(transaction['Amount Credited'])
+            other[transaction['Credit Currency']].net += Number(transaction['Amount Credited'])
+        }
+
+        if(transaction['Transaction Type'] === 'other' && transaction['Debit Currency']) {
+            other[transaction['Debit Currency']].out += Number(transaction['Amount Debited'])
+            other[transaction['Debit Currency']].net -= Number(transaction['Amount Debited'])
         }
 
     }
@@ -367,6 +401,7 @@ const adjustSnapshots = async ( transactions: any[] ) => {
             ...dailySnapshots[day],
             wallets: {...wallets},
             transfers: {
+                CAD: {...transfers.CAD},
                 BTC: {...transfers.BTC},
                 ETH: {...transfers.ETH},
             },
@@ -378,6 +413,11 @@ const adjustSnapshots = async ( transactions: any[] ) => {
                 CAD: {...pTransfers.CAD},
                 BTC: {...pTransfers.BTC},
                 ETH: {...pTransfers.ETH}
+            },
+            other: {
+                CAD: {...other.CAD},
+                BTC: {...other.BTC},
+                ETH: {...other.ETH},
             },
             card: {...card},
             shakingSats: {...shakingSats},
