@@ -396,6 +396,17 @@ const adjustSnapshots = async ( transactions: any[] ) => {
             adjustShakingSats(trans)
             adjustBuySell(trans, historicalPrice)
         })
+
+        const peerObj : any = {}
+
+        for (const peer in peers){
+            peerObj[peer] = {
+                CAD: {...peers[peer].CAD},
+                BTC: {...peers[peer].BTC},
+                ETH: {...peers[peer].ETH}
+            }
+        }
+        
         
         dailySnapshots[day] = {
             ...dailySnapshots[day],
@@ -421,7 +432,7 @@ const adjustSnapshots = async ( transactions: any[] ) => {
             },
             card: {...card},
             shakingSats: {...shakingSats},
-            peers: {...peers}
+            peers: {...peerObj}
         }
     }
 
