@@ -12,6 +12,32 @@ export const parseShakepay = functions.https.onCall(async (req, context) => {
         header: true
     })
 
+    const keyCheck : any = [
+        'Transaction Type',
+        'Date',
+        'Amount Debited',
+        'Debit Currency',
+        'Amount Credited',
+        'Credit Currency',
+        'Buy / Sell Rate',
+        'Direction',
+        'Spot Rate',
+        'Source / Destination',
+        'Blockchain Transaction ID'
+      ]
+    
+    
+    const firstResult : any = res.data[0]
+    const resultKeyList : any = Object.keys(firstResult)
+    
+    const checkKeys = () => {
+        return keyCheck.toString() === resultKeyList.toString()
+    }
+
+    if(!checkKeys()) {
+        throw new functions.https.HttpsError('invalid-argument', 'Poorly formatted csv: the csv file uploaded is not an unaltered Shakepay transaction csv file. Please, try again with an original, unaltered file. If error persists contact support.')
+    }
+
     const transactions = res.data
     return processTransactions(transactions)
 

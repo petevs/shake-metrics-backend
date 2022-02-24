@@ -425,13 +425,13 @@ const adjustSnapshots = async ( transactions: any[] ) => {
                 BTC: {...pTransfers.BTC},
                 ETH: {...pTransfers.ETH}
             },
+            card: {...card},
+            shakingSats: {...shakingSats},
             other: {
                 CAD: {...other.CAD},
                 BTC: {...other.BTC},
                 ETH: {...other.ETH},
             },
-            card: {...card},
-            shakingSats: {...shakingSats},
             peers: {...peerObj}
         }
     }
@@ -507,7 +507,7 @@ const aggregateSnapshots = async ( transactions: any[] ) => {
                 realizedROI: realizedROI(),
                 totalReturn: totalReturn(),
                 totalROI: totalROI(),
-                totalPurchased: current.buySell[currency].totalPurchased
+                totalPurchased: current.buySell[currency].totalPurchased,
             }
 
 
