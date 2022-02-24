@@ -6,6 +6,8 @@ import { processTransactions } from './utils/processTransactions'
 
 export const parseShakepay = functions.https.onCall(async (req, context) => {
 
+    functions.logger.log('Hello testing this')
+
     const { data } = await axios.get(req.url)
 
     const res = Papa.parse(data, {
@@ -37,6 +39,7 @@ export const parseShakepay = functions.https.onCall(async (req, context) => {
     if(!checkKeys()) {
         throw new functions.https.HttpsError('invalid-argument', 'Poorly formatted csv: the csv file uploaded is not an unaltered Shakepay transaction csv file. Please, try again with an original, unaltered file. If error persists contact support.')
     }
+
 
     const transactions = res.data
     return processTransactions(transactions)

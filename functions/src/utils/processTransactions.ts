@@ -1,5 +1,6 @@
 import * as admin from 'firebase-admin'
 import * as moment from 'moment'
+import * as functions from 'firebase-functions'
 
 
 const db = admin.firestore()
@@ -16,6 +17,8 @@ const getHistoricalData = async () => {
     const ethRef = db.collection('historicalData').doc('eth')
     const ethDoc = await ethRef.get()
     const ethResult = ethDoc.data()
+
+    functions.logger.log('Finished getting historical prices')
     
     if(!result || !ethResult){return []}
     
@@ -40,7 +43,9 @@ const getDatesBetween = ( start: moment.MomentInput, end: moment.MomentInput ) =
         current.add(1, 'days')
     }
 
-     return dateList
+    functions.logger.log('Finished getting dates between')
+    
+    return dateList
 
 }
 
@@ -84,6 +89,7 @@ const createDateSnapshots = async ( transactions: string | any[] ) => {
         }
     })
 
+    functions.logger.log('Finished creating date snapshots')
     return dateSnapshots
 
 }
@@ -109,6 +115,7 @@ const addTransactionsToDateSnapshots = async ( transactions: any[] ) => {
         }
     })
 
+    functions.logger.log('Finished adding transactions to date snapshots')
     return dateSnapshots
 
 }
@@ -385,6 +392,8 @@ const adjustSnapshots = async ( transactions: any[] ) => {
 
     let dailySnapshots : any = await addTransactionsToDateSnapshots(transactions)
 
+    functions.logger.log('Finished adding transactions to date snapshots')
+
     for ( const day in dailySnapshots) {
 
         const historicalPrice = dailySnapshots[day].historicalPrice['BTC']
@@ -436,6 +445,7 @@ const adjustSnapshots = async ( transactions: any[] ) => {
         }
     }
 
+    functions.logger.log('Finished adjusting snapshots')
     return dailySnapshots
 
 }
@@ -491,8 +501,6 @@ const aggregateSnapshots = async ( transactions: any[] ) => {
         const totalROI = () => {
             return totalReturn() / current.buySell[currency].totalInvested || 0
         }
-
-
 
         return {
                 value: currentValue(),
@@ -556,6 +564,7 @@ const aggregateSnapshots = async ( transactions: any[] ) => {
         }
     }
 
+    functions.logger.log('Finished aggregating')
     return snapshotObj    
 
 }
@@ -574,6 +583,7 @@ const createSnapshotList = async ( transactions: any ) => {
         })
     }
 
+    functions.logger.log('Finished creating snapshot list and obj')
     return {
         snapshotObj: { ...snapshotObj },
         snapshotList: [ ...snapshotList ]
@@ -584,5 +594,6 @@ export const processTransactions = async ( transactions: any ) => {
 
     const results  = await createSnapshotList(transactions)
 
+    functions.logger.log(results.snapshotList[results.snapshotList.length - 1])
     return results
 }
