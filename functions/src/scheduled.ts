@@ -1,7 +1,7 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 import axios from 'axios'
-import * as moment from 'moment'
+import * as moment from 'moment-timezone'
 import { getShakepayPrice } from './utils/getShakepayPrice'
 
 

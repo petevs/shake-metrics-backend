@@ -1,5 +1,5 @@
 import * as admin from 'firebase-admin'
-import * as moment from 'moment'
+import * as moment from 'moment-timezone'
 import * as functions from 'firebase-functions'
 
 
@@ -31,19 +31,19 @@ const getHistoricalData = async () => {
 
 
 //Get all the dates in between the start and end date and return an array of dates
-const getDatesBetween = ( start: moment.MomentInput, end: moment.MomentInput ) => {
+const getDatesBetween = ( start: moment.MomentInput ) => {
 
     let dateList = []
 
     let current = moment(start)
-    const stopDate = moment(end)
+    const stopDate = moment()
 
     while(current.isSameOrBefore(stopDate)){
         dateList.push(current.format('YYYY-MM-DD'))
         current.add(1, 'days')
     }
 
-    functions.logger.log('Finished getting dates between')
+    functions.logger.log(dateList[0], dateList[dateList.length - 1])
     
     return dateList
 
@@ -57,16 +57,20 @@ const createDateSnapshots = async ( transactions: string | any[] ) => {
 
     //Get start and end date based on transactions
     const startDate = moment(transactions[0]['Date']).format('YYYY-MM-DD')
-    const endDate = moment().format('YYYY-MM-DD')
 
     //Create an array of all the dates
-    const dateList = getDatesBetween(startDate, endDate)
+    const dateList = getDatesBetween(startDate)
     
     //Empty datesnapshot 
     const dateSnapshots : any = {}
 
     //Get all the historical prices for bitcoin and ethereum
     const historicalData : any = await getHistoricalData()
+
+    //Get to check last date in logs
+    const priceDates = Object.keys(historicalData['BTC'])
+    const lastDate = priceDates[priceDates.length - 1]
+    functions.logger.log(lastDate)
 
     //Count to keep track of the index
     let count : any = 0
@@ -586,7 +590,7 @@ const createSnapshotList = async ( transactions: any ) => {
     functions.logger.log('Finished creating snapshot list and obj')
     return {
         snapshotObj: { ...snapshotObj },
-        snapshotList: [ ...snapshotList ]
+        snapshotList: [ ...snapshotList ],
     }
 }
 
@@ -594,6 +598,5 @@ export const processTransactions = async ( transactions: any ) => {
 
     const results  = await createSnapshotList(transactions)
 
-    functions.logger.log(results.snapshotList[results.snapshotList.length - 1])
     return results
 }

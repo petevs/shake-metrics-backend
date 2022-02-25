@@ -6,7 +6,6 @@ import { processTransactions } from './utils/processTransactions'
 
 export const parseShakepay = functions.https.onCall(async (req, context) => {
 
-    functions.logger.log('Hello testing this')
 
     const { data } = await axios.get(req.url)
 
