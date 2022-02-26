@@ -5,7 +5,7 @@ import * as moment from 'moment-timezone'
 const db = admin.firestore()
 
 //Get historical prices
-const getHistoricalData = async ( timezone: string ) => {
+export const getHistoricalData = async ( timezone: string ) => {
     
     //Get historical bitcoin prices from firebase firestore
     const docRef = db.collection('historicalData').doc('cad')
