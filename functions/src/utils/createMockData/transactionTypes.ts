@@ -1,4 +1,4 @@
-import { checkInputs, getRandomDate, randomInt, Transaction } from "./helpers"
+import { checkInputs, getRandomDate, randomInt, randomNum, Transaction } from "./helpers"
 
 export const makeFiatFunding = ( wallets : any ) => {
 
@@ -103,4 +103,93 @@ export const makePurchase = ( wallets: any, historicalData: any ) => {
         wallets: wallets
     }
 
+}
+
+export const makeSale = ( wallets: any, historicalData: any ) => {
+
+    const currencies = ['BTC', 'ETH']
+    const currency : string = currencies[randomInt(0, currencies.length - 1)]
+    const date = getRandomDate() || '2020-01-05'
+
+    let buySellRate = undefined
+    if(date in historicalData[currency]){
+       buySellRate = historicalData[currency][date]
+    }
+
+    const maxAmount = Number(wallets[currency])
+
+    if(maxAmount === 0){
+        makeSale(wallets, historicalData)
+        return
+    }
+
+    const amountCredited : any = randomNum(0, maxAmount).toString()
+
+    if(amountCredited === 0){
+        makeSale(wallets, historicalData)
+        return
+    }
+
+    let amountDebited = undefined
+    if(buySellRate !== undefined){
+        amountDebited = buySellRate * Number(amountCredited)
+    }
+
+    const inputs : any = {
+        transactionType: 'purchase/sale',
+        date: date,
+        amountDebited: amountDebited,
+        debitCurrency: 'CAD',
+        buySellRate: buySellRate,
+        amountCredited: amountCredited,
+        creditCurrency: currency,
+        direction: 'sale'
+    }
+
+    const passedCheck = checkInputs(inputs)
+
+    if(!passedCheck){
+        makeSale(wallets, historicalData)
+        return
+    }
+
+    const transaction = new Transaction(inputs)
+    wallets['CAD'] += Number(transaction['Amount Debited'])
+    wallets[currency] -= Number(transaction['Amount Credited'])
+
+    return {
+        transaction: transaction,
+        wallets: wallets
+    }
+
+}
+
+
+export const makeCryptoFunding = ( wallets : any) => {
+
+    const currencies = ['BTC', 'ETH']
+    const currency : string = currencies[randomInt(0, currencies.length - 1)]
+
+    const inputs : any = {
+        transactionType: 'crypto funding',
+        date: getRandomDate(),
+        amountCredited: randomNum(0.0005, 10).toString(),
+        creditCurrency: currency,
+        direction: 'credit',
+    }
+
+    const passedCheck = checkInputs(inputs)
+
+    if(!passedCheck){
+        makeCryptoFunding(wallets)
+        return
+    }
+
+    const transaction = new Transaction(inputs)
+    wallets['CAD'] += Number(transaction['Amount Credited'])
+
+    return {
+        transaction: transaction,
+        wallets: wallets
+    }
 }
