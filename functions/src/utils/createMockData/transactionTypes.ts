@@ -193,3 +193,34 @@ export const makeCryptoFunding = ( wallets : any) => {
         wallets: wallets
     }
 }
+
+export const makeCryptoCashout = ( wallets : any ) => {
+
+    const currencies = ['BTC', 'ETH']
+    const currency : string = currencies[randomInt(0, currencies.length - 1)]
+
+    const maxAmount = Number(wallets[currency])
+
+    const inputs : any = {
+        transactionType: 'crypto cashout',
+        date: getRandomDate(),
+        amountDebited: randomNum(0.0005, maxAmount).toString(),
+        debitCurrency: currency,
+        direction: 'debit',
+    }
+
+    const passedCheck = checkInputs(inputs)
+
+    if(!passedCheck){
+        makeCryptoCashout(wallets)
+        return
+    }
+
+    const transaction = new Transaction(inputs)
+    wallets[currency] -= Number(transaction['Amount Credited'])
+
+    return {
+        transaction: transaction,
+        wallets: wallets
+    }
+}

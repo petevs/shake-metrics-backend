@@ -1,12 +1,23 @@
 import { getHistoricalData } from "../processTransactions";
 import { randomInt } from "./helpers";
-import { makeCryptoFunding, makeFiatCashout, makeFiatFunding, makePurchase, makeSale } from "./transactionTypes";
+import { makeCryptoCashout, makeCryptoFunding, makeFiatCashout, makeFiatFunding, makePurchase, makeSale } from "./transactionTypes";
 
 
-const transactionTypes = [makeFiatCashout, makeFiatFunding, makePurchase, makeSale, makeCryptoFunding]
+const transactionTypes = [makeFiatCashout, makeFiatFunding, makePurchase, makeSale, makeCryptoFunding, makeCryptoCashout]
 
 const getRandomTransaction = ( wallets : any, historicalData : any ) => {
     const selected = transactionTypes[randomInt(0, transactionTypes.length - 1)]
+
+    if(wallets.CAD === 0 && (selected === makeFiatCashout || selected === makePurchase)){
+        getRandomTransaction(wallets, historicalData)
+        return
+    }
+
+    if((wallets.BTC === 0 && wallets.ETH === 0) && (selected === makeSale || selected === makeCryptoCashout)){
+        getRandomTransaction(wallets, historicalData)
+        return
+    }
+
     return selected( wallets, historicalData)
 }
 
