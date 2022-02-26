@@ -1,4 +1,4 @@
-import { checkInputs, getRandomDate, randomInt, randomNum, Transaction } from "./helpers"
+import { checkInputs, getRandomDate, randomInt, randomNum, randomUsernames, Transaction } from "./helpers"
 
 export const makeFiatFunding = ( wallets : any ) => {
 
@@ -223,4 +223,79 @@ export const makeCryptoCashout = ( wallets : any ) => {
         transaction: transaction,
         wallets: wallets
     }
+}
+
+const usernameList = randomUsernames()
+
+export const makePeerSend = (wallets : any ) => {
+    const currencies = ['BTC', 'ETH', 'CAD']
+    const currency : string = currencies[randomInt(0, currencies.length - 1)]
+
+    const maxAmount = Number(wallets[currency])
+
+    const randomUser = usernameList[randomInt(0, usernameList.length - 1)]
+
+    const inputs : any = {
+        transactionType: 'peer transfer',
+        date: getRandomDate(),
+        amountDebited: randomNum(0.0005, maxAmount).toString(),
+        debitCurrency: currency,
+        direction: 'debit',
+        sourceDestination: randomUser
+    }
+
+    const passedCheck = checkInputs(inputs)
+
+    if(!passedCheck){
+        makePeerSend(wallets)
+        return
+    }
+
+    const transaction = new Transaction(inputs)
+    wallets[currency] -= Number(transaction['Amount Credited'])
+
+    return {
+        transaction: transaction,
+        wallets: wallets
+    }
+
+}
+
+export const makePeerReceive = (wallets : any ) => {
+    const currencies = ['BTC', 'ETH', 'CAD']
+    const currency : string = currencies[randomInt(0, currencies.length - 1)]
+
+    const maxAmount = () => {
+        if(currency === 'CAD'){
+            return 1000
+        }
+        return 10
+    }
+    
+    const randomUser = usernameList[randomInt(0, usernameList.length - 1)]
+
+    const inputs : any = {
+        transactionType: 'peer transfer',
+        date: getRandomDate(),
+        amountCredited: randomNum(0.0005, maxAmount()).toString(),
+        creditCurrency: currency,
+        direction: 'credit',
+        sourceDestination: randomUser,
+    }
+
+    const passedCheck = checkInputs(inputs)
+
+    if(!passedCheck){
+        makePeerReceive(wallets)
+        return
+    }
+
+    const transaction = new Transaction(inputs)
+    wallets[currency] += Number(transaction['Amount Credited'])
+
+    return {
+        transaction: transaction,
+        wallets: wallets
+    }
+
 }

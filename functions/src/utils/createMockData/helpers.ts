@@ -1,4 +1,6 @@
 import * as moment from 'moment'
+import faker from '@faker-js/faker'
+
 
 export const randomInt = ( min: number, max: number ) => {
     return Math.floor(Math.random() * ( max - min + 1 ) + min )
@@ -11,6 +13,17 @@ export const randomNum = ( min: number, max : number ) => {
 export const addLeadingZero = ( num : number ) => {
     if(num < 10){ return `0${num}`}
     return num
+}
+
+export const randomUsernames = () => {
+    
+    const usernameList = []
+    for (let i = 0; i < 25 ; i++){
+        const randomName = faker.name.firstName().toLowerCase()
+        const username = `@${randomName}`
+        usernameList.push(username)
+    }
+    return usernameList
 }
 
 export const getRandomDate = () => {
