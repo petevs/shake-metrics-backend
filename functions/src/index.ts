@@ -1,3 +1,3 @@
 export { api } from './https'
 export { parseShakepay } from './callable'
-export { updateMarketData, updateHistoricalDataCAD, updateHistoricalETH, updateShakepayPrice, } from './scheduled'
+export { updateHistoricalDataCAD, updateHistoricalETH, updateShakepayPrice, } from './scheduled'

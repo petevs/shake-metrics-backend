@@ -1,30 +1,15 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 import axios from 'axios'
-import * as moment from 'moment-timezone'
 import { getShakepayPrice } from './utils/getShakepayPrice'
 
 
 const db = admin.firestore()
 
 
-export const updateMarketData = functions
-    .runWith({ memory: '1GB', timeoutSeconds: 300})
-    .pubsub.schedule('*/5 * * * *').onRun( async (context) => {
-
-        let result: any
-
-        const { data } = await axios.get('https://api.coingecko.com/api/v3/coins/bitcoin?localization=cad')
-        
-        result = data
-
-        return db.collection('marketData').doc('data').set({...result.market_data})
-
-    })
-
 export const updateHistoricalDataCAD = functions
     .runWith({ memory: '1GB', timeoutSeconds: 300})
-    .pubsub.schedule('0 */4 * * *').onRun( async (context) => {
+    .pubsub.schedule('0 */3 * * *').onRun( async (context) => {
 
 
             let result: any
@@ -37,11 +22,9 @@ export const updateHistoricalDataCAD = functions
     
             result.prices.forEach( (item: any) => {
     
-                const friendlyDate:any = moment(item[0]).format('YYYY-MM-DD')
-    
                 historical = {
                     ...historical,
-                    [friendlyDate]: item[1]
+                    [item[0]]: item[1]
                 }
             })
     
@@ -51,7 +34,7 @@ export const updateHistoricalDataCAD = functions
 
 export const updateHistoricalETH = functions
     .runWith({ memory: '1GB', timeoutSeconds: 300})
-    .pubsub.schedule('0 */4 * * *').onRun( async (context) => {
+    .pubsub.schedule('0 */3 * * *').onRun( async (context) => {
 
 
             let result: any
@@ -64,11 +47,9 @@ export const updateHistoricalETH = functions
     
             result.prices.forEach( (item: any) => {
     
-                const friendlyDate:any = moment(item[0]).format('YYYY-MM-DD')
-    
                 historical = {
                     ...historical,
-                    [friendlyDate]: item[1]
+                    [item[0]]: item[1]
                 }
             })
     

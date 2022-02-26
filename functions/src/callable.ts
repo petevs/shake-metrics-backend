@@ -6,7 +6,7 @@ import { processTransactions } from './utils/processTransactions'
 
 export const parseShakepay = functions.https.onCall(async (req, context) => {
 
-
+    const timezone = req.timezone
     const { data } = await axios.get(req.url)
 
     const res = Papa.parse(data, {
@@ -41,6 +41,6 @@ export const parseShakepay = functions.https.onCall(async (req, context) => {
 
 
     const transactions = res.data
-    return processTransactions(transactions)
+    return processTransactions(transactions , timezone)
 
 })

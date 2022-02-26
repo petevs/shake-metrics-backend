@@ -1,12 +1,11 @@
 import * as admin from 'firebase-admin'
 import * as moment from 'moment-timezone'
-import * as functions from 'firebase-functions'
 
 
 const db = admin.firestore()
 
 //Get historical prices
-const getHistoricalData = async () => {
+const getHistoricalData = async ( timezone: string ) => {
     
     //Get historical bitcoin prices from firebase firestore
     const docRef = db.collection('historicalData').doc('cad')
@@ -17,33 +16,44 @@ const getHistoricalData = async () => {
     const ethRef = db.collection('historicalData').doc('eth')
     const ethDoc = await ethRef.get()
     const ethResult = ethDoc.data()
-
-    functions.logger.log('Finished getting historical prices')
     
     if(!result || !ethResult){return []}
     
-    //Return historical prices
+    //Format dates for accessing with current timezone
+
+    const getDateFormattedObject = ( previousObject: { [x: string]: any } ) => {
+        
+        let newObject : any = {}
+
+        for (const date in previousObject) {
+            const currentPrice = previousObject[date]
+            const convertedDate = moment(Number(date)).tz(timezone).format('YYYY-MM-DD')
+            newObject[convertedDate] = currentPrice
+        }
+
+        return newObject
+
+    }
+
     return {
-        BTC: {...result},
-        ETH: {...ethResult}
+        BTC: {...getDateFormattedObject(result)},
+        ETH: {...getDateFormattedObject(ethResult)}
     }
 }
 
 
 //Get all the dates in between the start and end date and return an array of dates
-const getDatesBetween = ( start: moment.MomentInput ) => {
+const getDatesBetween = ( start: moment.MomentInput, timezone : string ) => {
 
     let dateList = []
 
-    let current = moment(start).tz('Greenwich')
-    const stopDate = moment().tz('Greenwich')
+    let current = moment(start).tz(timezone)
+    const stopDate = moment().tz(timezone)
 
     while(current.isSameOrBefore(stopDate)){
         dateList.push(current.format('YYYY-MM-DD'))
         current.add(1, 'days')
     }
-
-    functions.logger.log(dateList[0], dateList[dateList.length - 1])
     
     return dateList
 
@@ -51,26 +61,21 @@ const getDatesBetween = ( start: moment.MomentInput ) => {
 
 
 //Create a snapshot for each date 
-const createDateSnapshots = async ( transactions: string | any[] ) => {
+const createDateSnapshots = async ( transactions: string | any[], timezone : string ) => {
 
     if(transactions.length === 0){ return []}
 
     //Get start and end date based on transactions
-    const startDate = moment(transactions[0]['Date']).format('YYYY-MM-DD')
+    const startDate = moment(transactions[0]['Date']).tz(timezone).format('YYYY-MM-DD')
 
     //Create an array of all the dates
-    const dateList = getDatesBetween(startDate)
+    const dateList = getDatesBetween(startDate, timezone)
     
     //Empty datesnapshot 
     const dateSnapshots : any = {}
 
     //Get all the historical prices for bitcoin and ethereum
-    const historicalData : any = await getHistoricalData()
-
-    //Get to check last date in logs
-    const priceDates = Object.keys(historicalData['BTC'])
-    const lastDate = priceDates[priceDates.length - 1]
-    functions.logger.log(lastDate)
+    const historicalData : any = await getHistoricalData( timezone )
 
     //Count to keep track of the index
     let count : any = 0
@@ -93,21 +98,20 @@ const createDateSnapshots = async ( transactions: string | any[] ) => {
         }
     })
 
-    functions.logger.log('Finished creating date snapshots')
     return dateSnapshots
 
 }
 
 //Add transactions to each date snapshot
-const addTransactionsToDateSnapshots = async ( transactions: any[] ) => {
+const addTransactionsToDateSnapshots = async ( transactions: any[], timezone : string ) => {
 
     //Create datesnapshots
-    const dateSnapshots : any = await createDateSnapshots(transactions)
+    const dateSnapshots : any = await createDateSnapshots( transactions , timezone )
 
     //for each transaction add it to the daily snapshots object
     transactions.forEach( ( transaction: { [x: string]: moment.MomentInput } ) => {
         //Make friendly date 
-        const friendlyDate = moment(transaction['Date']).format('YYYY-MM-DD')
+        const friendlyDate = moment(transaction['Date']).tz(timezone).format('YYYY-MM-DD')
 
         //Look up snapshot date and add transactions
         dateSnapshots[friendlyDate] = {
@@ -119,13 +123,12 @@ const addTransactionsToDateSnapshots = async ( transactions: any[] ) => {
         }
     })
 
-    functions.logger.log('Finished adding transactions to date snapshots')
     return dateSnapshots
 
 }
 
 //Adjust the snapshots based on type of transaction
-const adjustSnapshots = async ( transactions: any[] ) => {
+const adjustSnapshots = async ( transactions: any[], timezone : string ) => {
 
     //Starting balances to keep track of aggregates
     const wallets : any = {
@@ -344,10 +347,10 @@ const adjustSnapshots = async ( transactions: any[] ) => {
             const spotRate = Number(transaction['Spot Rate'])
             
             //Date of current shake
-            const shakeDate = moment(transaction['Date'])
+            const shakeDate = moment(transaction['Date']).tz(timezone)
 
             //Date of last shake
-            const lastShakeDate = moment(shakingSats.lastDay)
+            const lastShakeDate = moment(shakingSats.lastDay).tz(timezone)
 
             //If the difference between them is more than one day, streak breaks
             if(!lastShakeDate || shakeDate.diff(lastShakeDate, 'days') > 1) {
@@ -394,9 +397,8 @@ const adjustSnapshots = async ( transactions: any[] ) => {
 
     } 
 
-    let dailySnapshots : any = await addTransactionsToDateSnapshots(transactions)
+    let dailySnapshots : any = await addTransactionsToDateSnapshots(transactions, timezone)
 
-    functions.logger.log('Finished adding transactions to date snapshots')
 
     for ( const day in dailySnapshots) {
 
@@ -449,13 +451,12 @@ const adjustSnapshots = async ( transactions: any[] ) => {
         }
     }
 
-    functions.logger.log('Finished adjusting snapshots')
     return dailySnapshots
 
 }
 
 
-const aggregateSnapshots = async ( transactions: any[] ) => {
+const aggregateSnapshots = async ( transactions: any[], timezone : string ) => {
 
     const getPerformance = ( current: 
         { buySell: { [x: string]: { totalInvested: any, totalSold: any, totalPurchased: any, totalProceeds: any } }; historicalPrice: { [x: string]: number } }, 
@@ -526,7 +527,7 @@ const aggregateSnapshots = async ( transactions: any[] ) => {
     }
  
 
-    const snapshotObj = await adjustSnapshots(transactions)
+    const snapshotObj = await adjustSnapshots(transactions, timezone )
 
     const performance = {
         ALL: {},
@@ -568,15 +569,14 @@ const aggregateSnapshots = async ( transactions: any[] ) => {
         }
     }
 
-    functions.logger.log('Finished aggregating')
     return snapshotObj    
 
 }
 
 
 
-const createSnapshotList = async ( transactions: any ) => {
-    const snapshotObj : any = await aggregateSnapshots(transactions)
+const createSnapshotList = async ( transactions: any, timezone : string ) => {
+    const snapshotObj : any = await aggregateSnapshots(transactions, timezone)
 
     const snapshotList = []
 
@@ -587,16 +587,15 @@ const createSnapshotList = async ( transactions: any ) => {
         })
     }
 
-    functions.logger.log('Finished creating snapshot list and obj')
     return {
         snapshotObj: { ...snapshotObj },
         snapshotList: [ ...snapshotList ],
     }
 }
 
-export const processTransactions = async ( transactions: any ) => {
+export const processTransactions = async ( transactions: any, timezone : string ) => {
 
-    const results  = await createSnapshotList(transactions)
+    const results  = await createSnapshotList(transactions, timezone)
 
     return results
 }
