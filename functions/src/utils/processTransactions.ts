@@ -35,8 +35,8 @@ const getDatesBetween = ( start: moment.MomentInput ) => {
 
     let dateList = []
 
-    let current = moment(start)
-    const stopDate = moment()
+    let current = moment(start).tz('Greenwich')
+    const stopDate = moment().tz('Greenwich')
 
     while(current.isSameOrBefore(stopDate)){
         dateList.push(current.format('YYYY-MM-DD'))
