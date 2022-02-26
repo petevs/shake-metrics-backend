@@ -71,3 +71,14 @@ export class Transaction {
         this['Blockchain Transaction ID'] = inputs.blockchainID || ""
     }
 }
+
+export const checkInputs = ( inputs: any ) => {
+    let passedCheck = true
+    for(const key in inputs){
+        if(inputs[key] === undefined){
+            passedCheck = false
+            break
+        }
+    }
+    return passedCheck
+}
