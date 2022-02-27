@@ -99,3 +99,52 @@ export const checkInputs = ( inputs: any ) => {
     }
     return passedCheck
 }
+
+export const getDates = ( transactions: any ) => {
+
+    const initialDates = {
+        start: '',
+        end: ''
+    }
+
+    const dateRange = transactions.reduce( (dates: { [x: string]: any; start: moment.MomentInput; end: moment.MomentInput }, currentTrans: { [x: string]: any }) => {
+
+        const currentDate = currentTrans['Date']
+
+        if(dates.start === ''){
+            dates['start'] = currentDate
+        }
+
+        if(dates.end === ''){
+            dates['end'] = currentDate
+        }
+
+        if(moment(currentDate).isSameOrBefore(dates.start)){
+            dates['start'] = currentDate
+        }
+
+        if(moment(currentDate).isSameOrAfter(dates.end)){
+            dates['end'] = currentDate
+        }
+
+        return dates
+
+
+    }, initialDates)
+
+
+    //Get all the dates between
+
+    let dateList = []
+
+    let current = moment(dateRange.start)
+    const stopDate = moment()
+
+    while(current.isSameOrBefore(stopDate)){
+        dateList.push(current.format('YYYY-MM-DD'))
+        current.add(1, 'days')
+    }
+    
+    return dateList
+
+}

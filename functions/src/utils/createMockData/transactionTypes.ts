@@ -1,4 +1,5 @@
 import { checkInputs, getRandomDate, randomInt, randomNum, randomUsernames, Transaction } from "./helpers"
+import * as moment from 'moment'
 
 export const makeFiatFunding = ( wallets : any ) => {
 
@@ -297,5 +298,97 @@ export const makePeerReceive = (wallets : any ) => {
         transaction: transaction,
         wallets: wallets
     }
+
+}
+
+
+export const makeCardTransaction = ( wallets: any, historicalData : any ) => {
+
+    const maxAmount = Number(wallets['CAD'])
+
+    const inputs : any = {
+        transactionType: 'card transactions',
+        date: getRandomDate(),
+        amountDebited: randomNum(0, maxAmount).toString(),
+        debitCurrency: 'CAD',
+        direction: 'debit',
+        sourceDestination: 'STORE'
+    }
+
+    const passedCheck = checkInputs(inputs)
+
+    if(!passedCheck){
+        makeCardTransaction(wallets, historicalData)
+        return
+    }
+
+    const transaction = new Transaction(inputs)
+    wallets['CAD'] -= Number(transaction['Amount Debited'])
+
+    return {
+        transaction: transaction,
+        wallets: wallets
+    }
+
+}
+
+export const makeCardCashback = ( cardTransaction: any, historicalData : any ) => {
+
+    const transactionAmount = cardTransaction['Amount Debited']
+    const transactionDate = cardTransaction['Date']
+
+    const cashbackDate = moment(transactionDate).add(1, 'days').format('YYYY-MM-DD')
+    const cashbackAmountDollars = Number(transactionAmount) * .01
+    const spotRate = historicalData['BTC'][cashbackDate]
+    const cashbackBitcoin = cashbackAmountDollars / spotRate
+
+    const inputs : any = {
+            transactionType: 'card cashbacks',
+            date: cashbackDate,
+            amountCredited: cashbackBitcoin,
+            creditCurrency: 'BTC',
+            direction: 'credit',
+            spotRate: spotRate,
+            sourceDestination: '@cashbacks'
+    }
+
+    const passedCheck = checkInputs(inputs)
+
+    if(!passedCheck){
+        makeCardCashback(cardTransaction, historicalData)
+        return
+    }
+
+    const transaction = new Transaction(inputs)
+
+    return transaction
+
+
+}
+
+export const makeShakingSats = ( date: any, historicalData : any ) => {
+
+    const spotRate = historicalData['BTC'][date]
+    const amountCredited = 0.05 / spotRate
+
+    const inputs : any = {
+        transactionType: 'shakingsats',
+        date: date,
+        amountCredited: amountCredited,
+        creditCurrency: 'BTC',
+        direction: 'credit',
+        spotRate: spotRate,
+    }
+
+    const passedCheck = checkInputs(inputs)
+
+    if(!passedCheck){
+        makeShakingSats(date, historicalData)
+        return
+    }
+
+    const transaction = new Transaction(inputs)
+
+    return transaction
 
 }
