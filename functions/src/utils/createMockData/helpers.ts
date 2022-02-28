@@ -84,7 +84,7 @@ export const getDates = () => {
 
     let dateList = []
 
-    let current = moment('2019-01-01')
+    let current = moment('2020-01-01')
     const stopDate = moment().subtract(1, 'days')
 
     while(current.isSameOrBefore(stopDate)){

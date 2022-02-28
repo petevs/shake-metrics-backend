@@ -212,7 +212,7 @@ export const makeCryptoCashout : Function = ( date: any, wallets : any, historic
     }
 
     const transaction = new Transaction(inputs)
-    wallets[currency] -= Number(transaction['Amount Credited'])
+    wallets[currency] -= Number(transaction['Amount Debited'])
 
     return {
         transaction: transaction,
