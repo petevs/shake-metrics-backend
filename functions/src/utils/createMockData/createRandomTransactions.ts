@@ -1,3 +1,4 @@
+import * as moment from 'moment'
 import { getHistoricalData, processTransactions } from "../processTransactions";
 import { getDates, randomInt } from "./helpers";
 import { makeCardCashback, makeCardTransaction, makeCryptoCashout, makeCryptoFunding, makeFiatCashout, makeFiatFunding, makePeerReceive, makePeerSend, makePurchase, makeSale, makeShakingSats } from "./transactionTypes";
@@ -8,13 +9,22 @@ const transactionTypes = [makeFiatCashout, makeFiatFunding, makePurchase, makeSa
 const getRandomTransaction = ( wallets : any, historicalData : any ) => {
     const selected = transactionTypes[randomInt(0, transactionTypes.length - 1)]
 
-    if(wallets.CAD <= 5 && (selected === makeFiatCashout || selected === makePurchase || selected === makePeerSend)){
-        getRandomTransaction(wallets, historicalData)
+    if(wallets.CAD <= 5 && (
+        selected === makeFiatCashout || 
+        selected === makePurchase ||
+        selected === makePeerSend ||
+        selected === makeCardTransaction 
+    )){
+        getRandomTransaction( wallets, historicalData)
         return
     }
 
-    if((wallets.BTC <= 0.0005 && wallets.ETH <= 0.0005) && (selected === makeSale || selected === makeCryptoCashout || selected === makePeerSend)){
-        getRandomTransaction(wallets, historicalData)
+    if((wallets.BTC <= 0.0005 && wallets.ETH <= 0.0005) && (
+        selected === makeSale || 
+        selected === makeCryptoCashout || 
+        selected === makePeerSend
+        )){
+        getRandomTransaction( wallets, historicalData)
         return
     }
 
@@ -28,6 +38,7 @@ const getMockTransactions = async () => {
     const occurrences = [...Array(1000).keys()]
 
     const initial = {
+        Date: '2019-01-01',
         wallets: {
             'CAD': 0,
             'BTC': 0,
@@ -38,10 +49,23 @@ const getMockTransactions = async () => {
     
     const mockTransactions = occurrences.reduce( (previous: any, current) => {
     
-        const result = getRandomTransaction(previous.wallets, historicalData)
+        const result = getRandomTransaction( previous.wallets, historicalData)
+
         if(result){
+            //check date of last entry
+            const lastDate = previous['Date']
+            const currentDate = result.transaction['Date']
+
+            //If the date isn't ahead of the last one then run again
+            if(moment(currentDate).isSameOrBefore(lastDate)){
+                return previous
+            }
+
+            //Otherwise good add and continue
+    
             previous['wallets'] = {...result.wallets}
             previous['transactions'] = [...previous['transactions'], {...result.transaction}]
+            previous['Date'] = currentDate
         }
     
         return previous

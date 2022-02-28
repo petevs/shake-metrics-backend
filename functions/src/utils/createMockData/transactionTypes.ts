@@ -119,21 +119,16 @@ export const makeSale = ( wallets: any, historicalData: any ) => {
 
     const maxAmount = Number(wallets[currency])
 
-    if(maxAmount === 0){
+    if(maxAmount < 0.0001){
         makeSale(wallets, historicalData)
         return
     }
 
-    const amountCredited : any = randomNum(0, maxAmount).toString()
+    const amountDebited : any = randomNum(0.0001, maxAmount).toString()
 
-    if(amountCredited === 0){
-        makeSale(wallets, historicalData)
-        return
-    }
-
-    let amountDebited = undefined
+    let amountCredited = undefined
     if(buySellRate !== undefined){
-        amountDebited = buySellRate * Number(amountCredited)
+        amountCredited = buySellRate * Number(amountDebited)
     }
 
     const inputs : any = {
@@ -155,8 +150,8 @@ export const makeSale = ( wallets: any, historicalData: any ) => {
     }
 
     const transaction = new Transaction(inputs)
-    wallets['CAD'] += Number(transaction['Amount Debited'])
-    wallets[currency] -= Number(transaction['Amount Credited'])
+    wallets['CAD'] += Number(transaction['Amount Credited'])
+    wallets[currency] -= Number(transaction['Amount Debited'])
 
     return {
         transaction: transaction,
