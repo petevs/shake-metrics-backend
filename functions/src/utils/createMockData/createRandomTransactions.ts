@@ -1,76 +1,104 @@
-import * as moment from 'moment'
-import { getHistoricalData, processTransactions } from "../processTransactions";
-import { getDates, randomInt } from "./helpers";
-import { makeCardCashback, makeCardTransaction, makeCryptoCashout, makeCryptoFunding, makeFiatCashout, makeFiatFunding, makePeerReceive, makePeerSend, makePurchase, makeSale, makeShakingSats } from "./transactionTypes";
+import { 
+    getHistoricalData, 
+    processTransactions 
+} from "../processTransactions";
+
+import { 
+    getDates,
+    randomInt 
+} from "./helpers";
+import { 
+    // makeCryptoFunding, 
+    makeFiatFunding, 
+    makePurchase, 
+    makeSale,
+    makeFiatCashout,
+    makeCardTransaction,
+    makeCardCashback,
+    makeShakingSats, 
+    makePeerReceive,
+    makePeerSend,
+    makeCryptoCashout
+} 
+    from "./transactionTypes";
 
 
-const transactionTypes = [makeFiatCashout, makeFiatFunding, makePurchase, makeSale, makeCryptoFunding, makeCryptoCashout, makePeerReceive, makePeerSend, makeCardTransaction]
 
-const getRandomTransaction = ( wallets : any, historicalData : any ) => {
+const transactionTypes = [
+    makeFiatCashout,
+    makeFiatFunding, 
+    makePurchase, 
+    makeSale, 
+    makeCryptoCashout, 
+    makeCardTransaction, 
+    makePeerReceive,
+    makePeerSend
+]
+
+const getRandomTransaction : Function = ( date : any, wallets : any, historicalData : any ) => {
     const selected = transactionTypes[randomInt(0, transactionTypes.length - 1)]
+
+    if(wallets.CAD <= 5){
+        return makeFiatFunding( date, wallets)
+    }
+
+    if(wallets.BTC === 0){
+        return makePurchase( date, wallets, historicalData)
+    }
 
     if(wallets.CAD <= 5 && (
         selected === makeFiatCashout || 
         selected === makePurchase ||
-        selected === makePeerSend ||
-        selected === makeCardTransaction 
+        selected === makeCardTransaction ||
+        selected === makePeerSend
     )){
-        getRandomTransaction( wallets, historicalData)
-        return
+        return getRandomTransaction( date, wallets, historicalData)
     }
 
-    if((wallets.BTC <= 0.0005 && wallets.ETH <= 0.0005) && (
-        selected === makeSale || 
-        selected === makeCryptoCashout || 
+    if((wallets.BTC <= 0.0005 || wallets.ETH <= 0.0005) && (
+        selected === makeSale ||
+        selected === makeCryptoCashout ||
         selected === makePeerSend
         )){
-        getRandomTransaction( wallets, historicalData)
-        return
+        return getRandomTransaction( date, wallets, historicalData)
     }
 
-    return selected( wallets, historicalData)
+    return selected( date, wallets, historicalData)
 }
 
 
 const getMockTransactions = async () => {
     const historicalData = await getHistoricalData('America/Edmonton')
 
-    const occurrences = [...Array(1000).keys()]
+    const allDates = getDates()
 
     const initial = {
-        Date: '2019-01-01',
         wallets: {
-            'CAD': 0,
-            'BTC': 0,
-            'ETH': 0
+            CAD: 0,
+            BTC: 0,
+            ETH: 0
         },
         transactions: []
     }
     
-    const mockTransactions = occurrences.reduce( (previous: any, current) => {
+    const mockTransactions = allDates.reduce( (previous: any, currentDate) => {
     
-        const result = getRandomTransaction( previous.wallets, historicalData)
+        const result = getRandomTransaction( currentDate, previous.wallets, historicalData)
 
         if(result){
-            //check date of last entry
-            const lastDate = previous['Date']
-            const currentDate = result.transaction['Date']
-
-            //If the date isn't ahead of the last one then run again
-            if(moment(currentDate).isSameOrBefore(lastDate)){
-                return previous
+    
+            previous['wallets'] = {
+                CAD: result.wallets.CAD,
+                BTC: result.wallets.BTC,
+                ETH: result.wallets.ETH
             }
 
-            //Otherwise good add and continue
-    
-            previous['wallets'] = {...result.wallets}
             previous['transactions'] = [...previous['transactions'], {...result.transaction}]
-            previous['Date'] = currentDate
         }
     
         return previous
     }, initial)
-
+    
 
     const transactionsWithCashbacks = mockTransactions.transactions.reduce( (previous : any , current : any) => {
 
@@ -85,10 +113,8 @@ const getMockTransactions = async () => {
 
     }, mockTransactions.transactions )
 
-    
-    const allDates = getDates(transactionsWithCashbacks)
 
-    const shakingSats = allDates.map( (date) => makeShakingSats(date, historicalData))
+    const shakingSats = transactionsWithCashbacks.map( (item: { [x: string]: any; }) => makeShakingSats(item['Date'], historicalData))
 
     const unsortedTransactions =  [...transactionsWithCashbacks, ...shakingSats]
 
@@ -114,4 +140,5 @@ export const getReadyMockData = async () => {
     const results = await processTransactions(mockTransactions, 'Greenwich')
 
     return results
+
 }

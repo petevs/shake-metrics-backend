@@ -48,7 +48,7 @@ export const parseShakepay = functions.https.onCall(async (req, context) => {
 })
 
 
-export const makeMockData = functions.https.onCall(async () => {
+export const makeMockData = functions.https.onCall(async (req, context) => {
 
     const result = await getReadyMockData()
 

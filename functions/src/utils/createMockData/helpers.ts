@@ -26,29 +26,6 @@ export const randomUsernames = () => {
     return usernameList
 }
 
-export const getRandomDate = () => {
-
-    const currentDate = moment()
-    const currentYear = currentDate.year()
-    
-    const randomYear = randomInt(2019, currentYear)
-    const randomMonth = addLeadingZero(randomInt(1, 12))
-    const maxDays = moment(`${randomYear}-${randomMonth}`).daysInMonth()
-    const randomDay = addLeadingZero(randomInt(1, maxDays))
-
-    const randomDate = `${randomYear}=${randomMonth}-${randomDay}`
-
-    if(currentDate.isSameOrBefore(moment(randomDate)) || !moment(randomDate)){
-        getRandomDate()
-        return
-    }
-
-    else {
-        return moment(randomDate).format('YYYY-MM-DD')
-    }
-
-}
-
 export class Transaction {
     ['Transaction Type']: string
     ['Date']: string
@@ -100,45 +77,15 @@ export const checkInputs = ( inputs: any ) => {
     return passedCheck
 }
 
-export const getDates = ( transactions: any ) => {
-
-    const initialDates = {
-        start: '',
-        end: ''
-    }
-
-    const dateRange = transactions.reduce( (dates: { [x: string]: any; start: moment.MomentInput; end: moment.MomentInput }, currentTrans: { [x: string]: any }) => {
-
-        const currentDate = currentTrans['Date']
-
-        if(dates.start === ''){
-            dates['start'] = currentDate
-        }
-
-        if(dates.end === ''){
-            dates['end'] = currentDate
-        }
-
-        if(moment(currentDate).isSameOrBefore(dates.start)){
-            dates['start'] = currentDate
-        }
-
-        if(moment(currentDate).isSameOrAfter(dates.end)){
-            dates['end'] = currentDate
-        }
-
-        return dates
-
-
-    }, initialDates)
+export const getDates = () => {
 
 
     //Get all the dates between
 
     let dateList = []
 
-    let current = moment(dateRange.start)
-    const stopDate = moment()
+    let current = moment('2019-01-01')
+    const stopDate = moment().subtract(1, 'days')
 
     while(current.isSameOrBefore(stopDate)){
         dateList.push(current.format('YYYY-MM-DD'))

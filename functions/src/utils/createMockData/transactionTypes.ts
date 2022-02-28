@@ -1,11 +1,11 @@
-import { checkInputs, getRandomDate, randomInt, randomNum, randomUsernames, Transaction } from "./helpers"
+import { checkInputs, randomInt, randomNum, randomUsernames, Transaction } from "./helpers"
 import * as moment from 'moment'
 
-export const makeFiatFunding = ( wallets : any ) => {
+export const makeFiatFunding : Function = ( date: any, wallets : any ) => {
 
     const inputs : any = {
         transactionType: 'fiat funding',
-        date: getRandomDate(),
+        date: date,
         amountCredited: randomInt(5, 3000).toString(),
         creditCurrency: 'CAD',
         direction: 'credit',
@@ -15,8 +15,7 @@ export const makeFiatFunding = ( wallets : any ) => {
     const passedCheck = checkInputs(inputs)
 
     if(!passedCheck){
-        makeFiatFunding(wallets)
-        return
+        return makeFiatFunding( date, wallets)
     }
 
     const transaction = new Transaction(inputs)
@@ -29,13 +28,13 @@ export const makeFiatFunding = ( wallets : any ) => {
 }
 
 
-export const makeFiatCashout = ( wallets: any ) => {
+export const makeFiatCashout : Function = ( date: any,wallets: any ) => {
 
     const maxAmount : number = Math.floor(Number(wallets.CAD))
 
     const inputs : any = {
         transactionType: 'fiat cashout',
-        date: getRandomDate(),
+        date: date,
         amountDebited: randomInt(5, maxAmount).toString(),
         debitCurrency: 'CAD',
         direction: 'debit',
@@ -45,8 +44,7 @@ export const makeFiatCashout = ( wallets: any ) => {
     const passedCheck = checkInputs(inputs)
 
     if(!passedCheck){
-        makeFiatCashout(wallets)
-        return
+        return makeFiatCashout(date, wallets)
     }
 
     const transaction = new Transaction(inputs)
@@ -58,11 +56,10 @@ export const makeFiatCashout = ( wallets: any ) => {
     }
 }
 
-export const makePurchase = ( wallets: any, historicalData: any ) => {
+export const makePurchase : Function = ( date: any, wallets: any, historicalData: any ) => {
 
     const currencies = ['BTC', 'ETH']
     const currency : string = currencies[randomInt(0, currencies.length - 1)]
-    const date = getRandomDate() || '2020-01-05'
 
     let buySellRate = undefined
     if(date in historicalData[currency]){
@@ -91,8 +88,7 @@ export const makePurchase = ( wallets: any, historicalData: any ) => {
     const passedCheck = checkInputs(inputs)
 
     if(!passedCheck){
-        makePurchase(wallets, historicalData)
-        return
+        return makePurchase(date, wallets, historicalData)
     }
 
     const transaction = new Transaction(inputs)
@@ -106,11 +102,10 @@ export const makePurchase = ( wallets: any, historicalData: any ) => {
 
 }
 
-export const makeSale = ( wallets: any, historicalData: any ) => {
+export const makeSale : Function = ( date: any, wallets: any, historicalData: any ) => {
 
     const currencies = ['BTC', 'ETH']
     const currency : string = currencies[randomInt(0, currencies.length - 1)]
-    const date = getRandomDate() || '2020-01-05'
 
     let buySellRate = undefined
     if(date in historicalData[currency]){
@@ -118,11 +113,6 @@ export const makeSale = ( wallets: any, historicalData: any ) => {
     }
 
     const maxAmount = Number(wallets[currency])
-
-    if(maxAmount < 0.0001){
-        makeSale(wallets, historicalData)
-        return
-    }
 
     const amountDebited : any = randomNum(0.0001, maxAmount).toString()
 
@@ -145,8 +135,7 @@ export const makeSale = ( wallets: any, historicalData: any ) => {
     const passedCheck = checkInputs(inputs)
 
     if(!passedCheck){
-        makeSale(wallets, historicalData)
-        return
+        return makeSale(date, wallets, historicalData)
     }
 
     const transaction = new Transaction(inputs)
@@ -161,55 +150,65 @@ export const makeSale = ( wallets: any, historicalData: any ) => {
 }
 
 
-export const makeCryptoFunding = ( wallets : any) => {
+export const makeCryptoFunding : Function = ( date: any, wallets : any, historicalData : any) => {
 
     const currencies = ['BTC', 'ETH']
-    const currency : string = currencies[randomInt(0, currencies.length - 1)]
+    const currency : string = currencies[randomInt(0, 1)]
+
+    const spotRate = historicalData[currency][date]
+
 
     const inputs : any = {
         transactionType: 'crypto funding',
-        date: getRandomDate(),
-        amountCredited: randomNum(0.0005, 10).toString(),
+        date: date,
+        amountCredited: randomNum(0.0005, .01).toString(),
         creditCurrency: currency,
+        spotRate: spotRate,
         direction: 'credit',
     }
 
     const passedCheck = checkInputs(inputs)
 
     if(!passedCheck){
-        makeCryptoFunding(wallets)
-        return
+        return makeCryptoFunding(date, wallets, historicalData)
     }
 
     const transaction = new Transaction(inputs)
-    wallets['CAD'] += Number(transaction['Amount Credited'])
+    wallets[currency] += Number(transaction['Amount Credited'])
 
     return {
         transaction: transaction,
-        wallets: wallets
+        wallets: {
+            CAD: wallets.CAD,
+            BTC: wallets.BTC,
+            ETH: wallets.ETH
+        }
     }
 }
 
-export const makeCryptoCashout = ( wallets : any ) => {
+export const makeCryptoCashout : Function = ( date: any, wallets : any, historicalData : any ) => {
 
     const currencies = ['BTC', 'ETH']
     const currency : string = currencies[randomInt(0, currencies.length - 1)]
 
     const maxAmount = Number(wallets[currency])
 
+    const spotRate = historicalData[currency][date]
+
     const inputs : any = {
         transactionType: 'crypto cashout',
-        date: getRandomDate(),
+        date: date,
         amountDebited: randomNum(0.0005, maxAmount).toString(),
+        spotRate: spotRate,
         debitCurrency: currency,
+
         direction: 'debit',
     }
 
     const passedCheck = checkInputs(inputs)
 
     if(!passedCheck){
-        makeCryptoCashout(wallets)
-        return
+        return makeCryptoCashout(date, wallets, historicalData)
     }
 
     const transaction = new Transaction(inputs)
@@ -223,32 +222,41 @@ export const makeCryptoCashout = ( wallets : any ) => {
 
 const usernameList = randomUsernames()
 
-export const makePeerSend = (wallets : any ) => {
-    const currencies = ['BTC', 'ETH', 'CAD']
-    const currency : string = currencies[randomInt(0, currencies.length - 1)]
+export const makePeerSend : Function = (date: any, wallets : any, historicalData : any ) => {
+    // const currencies = ['BTC', 'ETH', 'CAD']
+    // const currency : string = currencies[randomInt(0, currencies.length - 1)]
+
+    const currency = 'CAD'
 
     const maxAmount = Number(wallets[currency])
 
     const randomUser = usernameList[randomInt(0, usernameList.length - 1)]
 
+    // let spotRate = ''
+
+    // if(currency === 'BTC' || currency === 'ETH'){
+    //     spotRate = historicalData[currency][date]
+    // }
+
+
     const inputs : any = {
         transactionType: 'peer transfer',
-        date: getRandomDate(),
+        date: date,
         amountDebited: randomNum(0.0005, maxAmount).toString(),
         debitCurrency: currency,
         direction: 'debit',
+        // spotRate: spotRate,
         sourceDestination: randomUser
     }
 
     const passedCheck = checkInputs(inputs)
 
     if(!passedCheck){
-        makePeerSend(wallets)
-        return
+        return makePeerSend(date, wallets, historicalData)
     }
 
     const transaction = new Transaction(inputs)
-    wallets[currency] -= Number(transaction['Amount Credited'])
+    wallets[currency] -= Number(transaction['Amount Debited'])
 
     return {
         transaction: transaction,
@@ -257,33 +265,41 @@ export const makePeerSend = (wallets : any ) => {
 
 }
 
-export const makePeerReceive = (wallets : any ) => {
-    const currencies = ['BTC', 'ETH', 'CAD']
-    const currency : string = currencies[randomInt(0, currencies.length - 1)]
+export const makePeerReceive : Function = (date: any, wallets : any, historicalData : any ) => {
+    // const currencies = ['BTC', 'ETH', 'CAD']
+    // const currency : string = currencies[randomInt(0, currencies.length - 1)]
+
+    // let spotRate = ''
+
+    // if(currency === 'BTC' || currency === 'ETH'){
+    //     spotRate = historicalData[currency][date]
+    // }
+
+    const currency : string = 'CAD'
 
     const maxAmount = () => {
         if(currency === 'CAD'){
-            return 1000
+            return 30
         }
-        return 10
+        return 0.002
     }
     
     const randomUser = usernameList[randomInt(0, usernameList.length - 1)]
 
     const inputs : any = {
         transactionType: 'peer transfer',
-        date: getRandomDate(),
+        date: date,
         amountCredited: randomNum(0.0005, maxAmount()).toString(),
         creditCurrency: currency,
         direction: 'credit',
+        // spotRate: spotRate,
         sourceDestination: randomUser,
     }
 
     const passedCheck = checkInputs(inputs)
 
     if(!passedCheck){
-        makePeerReceive(wallets)
-        return
+        return makePeerReceive(date, wallets, historicalData)
     }
 
     const transaction = new Transaction(inputs)
@@ -297,13 +313,13 @@ export const makePeerReceive = (wallets : any ) => {
 }
 
 
-export const makeCardTransaction = ( wallets: any, historicalData : any ) => {
+export const makeCardTransaction : Function = ( date: any, wallets: any, historicalData : any ) => {
 
     const maxAmount = Number(wallets['CAD'])
 
     const inputs : any = {
         transactionType: 'card transactions',
-        date: getRandomDate(),
+        date: date,
         amountDebited: randomNum(0, maxAmount).toString(),
         debitCurrency: 'CAD',
         direction: 'debit',
@@ -313,8 +329,7 @@ export const makeCardTransaction = ( wallets: any, historicalData : any ) => {
     const passedCheck = checkInputs(inputs)
 
     if(!passedCheck){
-        makeCardTransaction(wallets, historicalData)
-        return
+        return makeCardTransaction( date, wallets, historicalData)
     }
 
     const transaction = new Transaction(inputs)
@@ -327,7 +342,7 @@ export const makeCardTransaction = ( wallets: any, historicalData : any ) => {
 
 }
 
-export const makeCardCashback = ( cardTransaction: any, historicalData : any ) => {
+export const makeCardCashback : Function = ( cardTransaction: any, historicalData : any ) => {
 
     const transactionAmount = cardTransaction['Amount Debited']
     const transactionDate = cardTransaction['Date']
@@ -350,8 +365,7 @@ export const makeCardCashback = ( cardTransaction: any, historicalData : any ) =
     const passedCheck = checkInputs(inputs)
 
     if(!passedCheck){
-        makeCardCashback(cardTransaction, historicalData)
-        return
+        return makeCardCashback(cardTransaction, historicalData)
     }
 
     const transaction = new Transaction(inputs)
