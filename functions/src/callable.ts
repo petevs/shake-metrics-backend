@@ -2,7 +2,7 @@ import axios from 'axios'
 import * as Papa from 'papaparse'
 import * as functions from 'firebase-functions'
 import { processTransactions } from './utils/processTransactions'
-import { getReadyMockData } from './utils/createMockData/createRandomTransactions'
+import { getMockTransactions } from './utils/createMockData/createRandomTransactions'
 
 
 export const parseShakepay = functions.https.onCall(async (req, context) => {
@@ -50,8 +50,8 @@ export const parseShakepay = functions.https.onCall(async (req, context) => {
 
 export const makeMockData = functions.https.onCall(async (req, context) => {
 
-    const result = await getReadyMockData()
+    const transactions = await getMockTransactions()
 
-    return result
+    return processTransactions(transactions, 'Greenwich')
 
 })

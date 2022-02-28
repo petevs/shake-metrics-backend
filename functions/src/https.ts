@@ -5,21 +5,15 @@ import * as admin from 'firebase-admin'
 
 admin.initializeApp()
 
-import { getReadyMockData } from './utils/createMockData/createRandomTransactions'
-
-
-
 const app = express()
 
 app.use(express.json())
 app.use(express.urlencoded({extended: true}))
 app.use(cors({ origin: true }))
 
-app.get('/mock-data', async (req, res) => {
-
-    const result = await getReadyMockData()
+app.get('/cats', async (req, res) => {
     
-    res.send(result)
+    res.send('hi cats')
 })
 
 export const api = functions.https.onRequest(app)

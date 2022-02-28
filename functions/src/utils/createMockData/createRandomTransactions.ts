@@ -1,6 +1,5 @@
 import { 
     getHistoricalData, 
-    processTransactions 
 } from "../processTransactions";
 
 import { 
@@ -67,7 +66,7 @@ const getRandomTransaction : Function = ( date : any, wallets : any, historicalD
 }
 
 
-const getMockTransactions = async () => {
+export const getMockTransactions = async () => {
     const historicalData = await getHistoricalData('America/Edmonton')
 
     const allDates = getDates()
@@ -130,15 +129,5 @@ const getMockTransactions = async () => {
 
     return sortedTransactions.reverse()
 
-
-}
-
-export const getReadyMockData = async () => {
-
-    const mockTransactions : any = await getMockTransactions()
-
-    const results = await processTransactions(mockTransactions, 'Greenwich')
-
-    return results
 
 }
