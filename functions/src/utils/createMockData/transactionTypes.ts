@@ -140,10 +140,10 @@ export const makeSale = ( wallets: any, historicalData: any ) => {
         transactionType: 'purchase/sale',
         date: date,
         amountDebited: amountDebited,
-        debitCurrency: 'CAD',
+        debitCurrency: currency,
         buySellRate: buySellRate,
         amountCredited: amountCredited,
-        creditCurrency: currency,
+        creditCurrency: 'CAD',
         direction: 'sale'
     }
 
@@ -378,13 +378,6 @@ export const makeShakingSats = ( date: any, historicalData : any ) => {
         creditCurrency: 'BTC',
         direction: 'credit',
         spotRate: spotRate,
-    }
-
-    const passedCheck = checkInputs(inputs)
-
-    if(!passedCheck){
-        makeShakingSats(date, historicalData)
-        return
     }
 
     const transaction = new Transaction(inputs)

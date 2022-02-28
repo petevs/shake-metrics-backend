@@ -1,4 +1,4 @@
-import { getHistoricalData } from "../processTransactions";
+import { getHistoricalData, processTransactions } from "../processTransactions";
 import { getDates, randomInt } from "./helpers";
 import { makeCardCashback, makeCardTransaction, makeCryptoCashout, makeCryptoFunding, makeFiatCashout, makeFiatFunding, makePeerReceive, makePeerSend, makePurchase, makeSale, makeShakingSats } from "./transactionTypes";
 
@@ -22,10 +22,10 @@ const getRandomTransaction = ( wallets : any, historicalData : any ) => {
 }
 
 
-export const getMockTransactions = async () => {
+const getMockTransactions = async () => {
     const historicalData = await getHistoricalData('America/Edmonton')
 
-    const occurrences = [...Array(20).keys()]
+    const occurrences = [...Array(1000).keys()]
 
     const initial = {
         wallets: {
@@ -66,6 +66,28 @@ export const getMockTransactions = async () => {
 
     const shakingSats = allDates.map( (date) => makeShakingSats(date, historicalData))
 
-    return [...transactionsWithCashbacks, ...shakingSats]
+    const unsortedTransactions =  [...transactionsWithCashbacks, ...shakingSats]
 
+    const sortedTransactions = unsortedTransactions.sort(
+        function(a : any , b : any){
+
+            const dateB : any = new Date(b['Date'])
+            const dateA : any = new Date(a['Date'])
+
+            return dateB - dateA
+        }
+    )
+
+    return sortedTransactions.reverse()
+
+
+}
+
+export const getReadyMockData = async () => {
+
+    const mockTransactions : any = await getMockTransactions()
+
+    const results = await processTransactions(mockTransactions, 'Greenwich')
+
+    return results
 }
