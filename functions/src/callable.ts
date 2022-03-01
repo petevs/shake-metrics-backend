@@ -7,7 +7,7 @@ import { getMockTransactions } from './utils/createMockData/createRandomTransact
 
 export const parseShakepay = functions.https.onCall(async (req, context) => {
 
-    const timezone = req.timezone
+    const timezone = 'Greenwich'
     const { data } = await axios.get(req.url)
 
     const res = Papa.parse(data, {
