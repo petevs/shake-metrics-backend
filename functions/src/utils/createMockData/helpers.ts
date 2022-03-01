@@ -77,14 +77,14 @@ export const checkInputs = ( inputs: any ) => {
     return passedCheck
 }
 
-export const getDates = () => {
+export const getDates = (date : string) => {
 
 
     //Get all the dates between
 
     let dateList = []
 
-    let current = moment('2020-01-01')
+    let current = moment(date)
     const stopDate = moment().subtract(1, 'days')
 
     while(current.isSameOrBefore(stopDate)){

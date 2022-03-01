@@ -11,9 +11,11 @@ app.use(express.json())
 app.use(express.urlencoded({extended: true}))
 app.use(cors({ origin: true }))
 
-app.get('/cats', async (req, res) => {
+app.get('/get-mock', async (req, res) => {
     
-    res.send('hi cats')
+    res.send('hi')
+
+
 })
 
 export const api = functions.https.onRequest(app)

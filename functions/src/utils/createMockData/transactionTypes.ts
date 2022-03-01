@@ -6,7 +6,7 @@ export const makeFiatFunding : Function = ( date: any, wallets : any ) => {
     const inputs : any = {
         transactionType: 'fiat funding',
         date: date,
-        amountCredited: randomInt(5, 3000).toString(),
+        amountCredited: randomInt(5, 3000).toFixed(4),
         creditCurrency: 'CAD',
         direction: 'credit',
         sourceDestination: 'bigshaker@domain.com'
@@ -35,7 +35,7 @@ export const makeFiatCashout : Function = ( date: any,wallets: any ) => {
     const inputs : any = {
         transactionType: 'fiat cashout',
         date: date,
-        amountDebited: randomInt(5, maxAmount).toString(),
+        amountDebited: randomInt(5, maxAmount).toFixed(4),
         debitCurrency: 'CAD',
         direction: 'debit',
         sourceDestination: 'bigshaker@domain.com'
@@ -67,11 +67,11 @@ export const makePurchase : Function = ( date: any, wallets: any, historicalData
     }
 
     const maxAmount = Math.floor(Number(wallets.CAD))
-    const amountDebited : any = randomInt(5, maxAmount).toString()
+    const amountDebited : any = randomInt(5, maxAmount).toFixed(4)
 
     let amountCredited = undefined
     if(buySellRate !== undefined){
-        amountCredited = Number(amountDebited) / buySellRate
+        amountCredited = (Number(amountDebited) / buySellRate).toFixed(4)
     }
 
     const inputs : any = {
@@ -114,7 +114,7 @@ export const makeSale : Function = ( date: any, wallets: any, historicalData: an
 
     const maxAmount = Number(wallets[currency])
 
-    const amountDebited : any = randomNum(0.0001, maxAmount).toString()
+    const amountDebited : any = randomNum(0.0001, maxAmount).toFixed(8)
 
     let amountCredited = undefined
     if(buySellRate !== undefined){
@@ -126,8 +126,8 @@ export const makeSale : Function = ( date: any, wallets: any, historicalData: an
         date: date,
         amountDebited: amountDebited,
         debitCurrency: currency,
-        buySellRate: buySellRate,
-        amountCredited: amountCredited,
+        buySellRate: buySellRate.toFixed(4),
+        amountCredited: amountCredited?.toFixed(4),
         creditCurrency: 'CAD',
         direction: 'sale'
     }
@@ -161,9 +161,9 @@ export const makeCryptoFunding : Function = ( date: any, wallets : any, historic
     const inputs : any = {
         transactionType: 'crypto funding',
         date: date,
-        amountCredited: randomNum(0.0005, .01).toString(),
+        amountCredited: randomNum(0.0005, .01).toFixed(8),
         creditCurrency: currency,
-        spotRate: spotRate,
+        spotRate: spotRate.toFixed(4),
         direction: 'credit',
     }
 
@@ -198,8 +198,8 @@ export const makeCryptoCashout : Function = ( date: any, wallets : any, historic
     const inputs : any = {
         transactionType: 'crypto cashout',
         date: date,
-        amountDebited: randomNum(0.0005, maxAmount).toString(),
-        spotRate: spotRate,
+        amountDebited: randomNum(0.0005, maxAmount).toFixed(8),
+        spotRate: spotRate.toFixed(4),
         debitCurrency: currency,
 
         direction: 'debit',
@@ -242,7 +242,7 @@ export const makePeerSend : Function = (date: any, wallets : any, historicalData
     const inputs : any = {
         transactionType: 'peer transfer',
         date: date,
-        amountDebited: randomNum(0.0005, maxAmount).toString(),
+        amountDebited: randomNum(0.0005, maxAmount).toFixed(4),
         debitCurrency: currency,
         direction: 'debit',
         // spotRate: spotRate,
@@ -289,7 +289,7 @@ export const makePeerReceive : Function = (date: any, wallets : any, historicalD
     const inputs : any = {
         transactionType: 'peer transfer',
         date: date,
-        amountCredited: randomNum(0.0005, maxAmount()).toString(),
+        amountCredited: randomNum(0.0005, maxAmount()).toFixed(4),
         creditCurrency: currency,
         direction: 'credit',
         // spotRate: spotRate,
@@ -320,7 +320,7 @@ export const makeCardTransaction : Function = ( date: any, wallets: any, histori
     const inputs : any = {
         transactionType: 'card transactions',
         date: date,
-        amountDebited: randomNum(0, maxAmount).toString(),
+        amountDebited: randomNum(0, maxAmount).toFixed(4),
         debitCurrency: 'CAD',
         direction: 'debit',
         sourceDestination: 'STORE'
@@ -355,10 +355,10 @@ export const makeCardCashback : Function = ( cardTransaction: any, historicalDat
     const inputs : any = {
             transactionType: 'card cashbacks',
             date: cashbackDate,
-            amountCredited: cashbackBitcoin,
+            amountCredited: cashbackBitcoin.toFixed(8),
             creditCurrency: 'BTC',
             direction: 'credit',
-            spotRate: spotRate,
+            spotRate: spotRate.toFixed(4),
             sourceDestination: '@cashbacks'
     }
 
@@ -378,15 +378,14 @@ export const makeCardCashback : Function = ( cardTransaction: any, historicalDat
 export const makeShakingSats = ( date: any, historicalData : any ) => {
 
     const spotRate = historicalData['BTC'][date]
-    const amountCredited = 0.05 / spotRate
 
     const inputs : any = {
         transactionType: 'shakingsats',
         date: date,
-        amountCredited: amountCredited,
+        amountCredited: '0.000002',
         creditCurrency: 'BTC',
         direction: 'credit',
-        spotRate: spotRate,
+        spotRate: spotRate.toFixed(4),
     }
 
     const transaction = new Transaction(inputs)

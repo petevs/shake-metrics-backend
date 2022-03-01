@@ -69,7 +69,7 @@ const getRandomTransaction : Function = ( date : any, wallets : any, historicalD
 export const getMockTransactions = async () => {
     const historicalData = await getHistoricalData('America/Edmonton')
 
-    const allDates = getDates()
+    const allDates = getDates('2020-06-01')
 
     const initial = {
         wallets: {
@@ -110,12 +110,15 @@ export const getMockTransactions = async () => {
         return previous
 
 
-    }, mockTransactions.transactions )
+    }, [] )
 
 
-    const shakingSats = transactionsWithCashbacks.map( (item: { [x: string]: any; }) => makeShakingSats(item['Date'], historicalData))
+    const shakingDates = getDates('2021-04-01')
 
-    const unsortedTransactions =  [...transactionsWithCashbacks, ...shakingSats]
+    const shakingSats = shakingDates.map( (date) => makeShakingSats(date, historicalData))
+
+    const unsortedTransactions = [...mockTransactions.transactions, ...transactionsWithCashbacks, ...shakingSats]
+
 
     const sortedTransactions = unsortedTransactions.sort(
         function(a : any , b : any){
@@ -128,6 +131,5 @@ export const getMockTransactions = async () => {
     )
 
     return sortedTransactions.reverse()
-
 
 }

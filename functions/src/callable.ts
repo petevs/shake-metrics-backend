@@ -48,10 +48,10 @@ export const parseShakepay = functions.https.onCall(async (req, context) => {
 })
 
 
-export const makeMockData = functions.https.onCall(async (req, context) => {
+export const getMockShakeData = functions.region('us-central1').https.onCall(async (req, context) => {
 
     const transactions = await getMockTransactions()
 
-    return processTransactions(transactions, 'Greenwich')
 
+    return transactions
 })
