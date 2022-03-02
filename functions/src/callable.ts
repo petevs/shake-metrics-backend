@@ -3,11 +3,23 @@ import * as Papa from 'papaparse'
 import * as functions from 'firebase-functions'
 import { processTransactions } from './utils/processTransactions'
 import { getMockTransactions } from './utils/createMockData/createRandomTransactions'
+import * as moment from 'moment-timezone'
 
 
 export const parseShakepay = functions.https.onCall(async (req, context) => {
 
-    const timezone = 'Greenwich'
+    const userTimezone = moment.tz(req.timezone).format('YYYY-MM-DD')
+    const utcDate = moment.utc().format('YYYY-MM-DD')
+
+    let timezone = 'Greenwich'
+
+    if(utcDate !== userTimezone){
+        timezone = req.timezone
+    }
+
+
+
+
     const { data } = await axios.get(req.url)
 
     const res = Papa.parse(data, {
