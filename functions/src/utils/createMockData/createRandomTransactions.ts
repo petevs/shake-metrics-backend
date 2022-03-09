@@ -21,8 +21,6 @@ import {
 } 
     from "./transactionTypes";
 
-
-
 const transactionTypes = [
     makeFiatCashout,
     makeFiatFunding, 
@@ -130,6 +128,7 @@ export const getMockTransactions = async () => {
         }
     )
 
-    return sortedTransactions.reverse()
+    const finalTransactions = sortedTransactions.reverse()
 
+    return finalTransactions
 }
